@@ -1,0 +1,31 @@
+server:
+  port: 8088
+
+tenx:
+  ai:
+    gateway:
+      api-keys: ${TENX_AI_GATEWAY_API_KEYS:local-dev-key}
+      providers:
+        local-compatible:
+          type: openai-compatible
+          base-url: ${TENX_LOCAL_OPENAI_BASE_URL:http://127.0.0.1:4000}
+          api-key: ${TENX_LOCAL_OPENAI_API_KEY:}
+        cloud-openai:
+          type: openai-compatible
+          base-url: ${TENX_CLOUD_OPENAI_BASE_URL:https://api.openai.com}
+          api-key: ${TENX_CLOUD_OPENAI_API_KEY:}
+      routes:
+        coder:
+          provider: local-compatible
+          model: qwen3-coder-next
+          fallback-provider: cloud-openai
+          fallback-model: gpt-5
+        general:
+          provider: local-compatible
+          model: gpt-oss-120b
+        fast:
+          provider: local-compatible
+          model: qwen-small
+        cloud:
+          provider: cloud-openai
+          model: gpt-5
