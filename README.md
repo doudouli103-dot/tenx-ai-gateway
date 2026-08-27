@@ -202,6 +202,143 @@ API Key:  one value from TENX_AI_GATEWAY_API_KEYS
 Model:    qwen3-coder-next or another configured real model name
 ```
 
+## Download Llama.cpp GGUF Models
+
+Use this Python class to download GGUF models for llama.cpp through the Hugging Face Python API.
+
+It applies to the Gateway chat models that run behind `TENX_LOCAL_OPENAI_BASE_URL`:
+
+```text
+qwen3-coder-next
+gpt-oss-120b
+qwen-small
+```
+
+It does not apply to `gpt-5`, because `gpt-5` is a cloud model. It also does not apply to `qwen-image`, `flux-dev`, `HunyuanVideo-1.5`, or `Wan2.2-TI2V-5B`; those image and video models should run behind ComfyUI or another diffusion/video runtime.
+
+Install the dependency:
+
+```bash
+pip install huggingface_hub
+```
+
+Python code:
+
+```python
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Optional
+
+from huggingface_hub import snapshot_download
+
+
+@dataclass(frozen=True)
+class LlamaCppModelSpec:
+    model_name: str
+    repo_id: str
+    allow_patterns: List[str]
+
+
+class LlamaCppModelDownloader:
+    MODEL_SPECS: Dict[str, LlamaCppModelSpec] = {
+        "qwen3-coder-next": LlamaCppModelSpec(
+            model_name="qwen3-coder-next",
+            repo_id="Qwen/Qwen3-Coder-Next-GGUF",
+            allow_patterns=[
+                "*Q4_K_M*.gguf",
+            ],
+        ),
+        "gpt-oss-120b": LlamaCppModelSpec(
+            model_name="gpt-oss-120b",
+            repo_id="lmstudio-community/gpt-oss-120b-GGUF",
+            allow_patterns=[
+                "*MXFP4*.gguf",
+            ],
+        ),
+        "qwen-small": LlamaCppModelSpec(
+            model_name="qwen-small",
+            repo_id="lmstudio-community/Qwen3-8B-GGUF",
+            allow_patterns=[
+                "*Q4_K_M*.gguf",
+            ],
+        ),
+    }
+
+    def __init__(
+        self,
+        download_root: str,
+        token: Optional[str] = None,
+        revision: Optional[str] = None,
+    ):
+        self.download_root = Path(download_root).expanduser().resolve()
+        self.token = token
+        self.revision = revision
+
+    def download(self, model_name: str) -> Path:
+        if model_name not in self.MODEL_SPECS:
+            supported = ", ".join(self.MODEL_SPECS.keys())
+            raise ValueError(f"Unsupported model: {model_name}. Supported: {supported}")
+
+        spec = self.MODEL_SPECS[model_name]
+        target_dir = self.download_root / spec.model_name
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        local_path = snapshot_download(
+            repo_id=spec.repo_id,
+            repo_type="model",
+            revision=self.revision,
+            local_dir=str(target_dir),
+            allow_patterns=spec.allow_patterns,
+            token=self.token,
+            local_dir_use_symlinks=False,
+        )
+
+        return Path(local_path).resolve()
+
+    def download_all(self) -> Dict[str, Path]:
+        result = {}
+        for model_name in self.MODEL_SPECS:
+            result[model_name] = self.download(model_name)
+        return result
+
+
+if __name__ == "__main__":
+    import os
+
+    downloader = LlamaCppModelDownloader(
+        download_root="/Users/lijunwei/ai-models/llama-cpp",
+        token=os.getenv("HF_TOKEN"),
+    )
+
+    result = downloader.download_all()
+
+    for model_name, path in result.items():
+        print(f"{model_name}: {path}")
+```
+
+Run it:
+
+```bash
+export HF_TOKEN=your_hugging_face_token
+python download_llama_cpp_models.py
+```
+
+Start one downloaded GGUF model with llama.cpp:
+
+```bash
+llama-server \
+  -m /Users/lijunwei/ai-models/llama-cpp/qwen-small/<model-file>.gguf \
+  --host 0.0.0.0 \
+  --port 4000 \
+  -c 32768
+```
+
+Then point the Gateway to llama.cpp:
+
+```bash
+export TENX_LOCAL_OPENAI_BASE_URL=http://127.0.0.1:4000
+```
+
 ## Image And Video Generation
 
 Recommended video models:
