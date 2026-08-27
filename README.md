@@ -202,6 +202,64 @@ API Key:  one value from TENX_AI_GATEWAY_API_KEYS
 Model:    qwen3-coder-next or another configured real model name
 ```
 
+## Install Llama.cpp
+
+Use llama.cpp for local chat models that expose an OpenAI-compatible `/v1/chat/completions` API to the Gateway.
+
+Recommended placement:
+
+```text
+Mac Studio
+  llama.cpp:4000
+  tenx-ai-gateway:8088
+```
+
+Install build tools:
+
+```bash
+xcode-select --install
+brew install cmake git
+```
+
+Build llama.cpp from source:
+
+```bash
+mkdir -p /Users/lijunwei/ai
+cd /Users/lijunwei/ai
+
+git clone https://github.com/ggml-org/llama.cpp.git
+cd llama.cpp
+
+cmake -B build
+cmake --build build --config Release -j
+```
+
+On macOS, llama.cpp enables Metal by default, so Apple Silicon can use GPU acceleration without an extra build flag.
+
+Start a local OpenAI-compatible server after downloading a GGUF model:
+
+```bash
+cd /Users/lijunwei/ai/llama.cpp
+
+./build/bin/llama-server \
+  -m /Users/lijunwei/ai-models/llama-cpp/qwen-small/<model-file>.gguf \
+  --host 0.0.0.0 \
+  --port 4000 \
+  -c 32768
+```
+
+Then point the Gateway to llama.cpp:
+
+```bash
+export TENX_LOCAL_OPENAI_BASE_URL=http://127.0.0.1:4000
+```
+
+If the Gateway runs in Docker on the same Mac host, use:
+
+```bash
+TENX_LOCAL_OPENAI_BASE_URL=http://host.docker.internal:4000
+```
+
 ## Download Llama.cpp GGUF Models
 
 Use this Python class to download GGUF models for llama.cpp through the Hugging Face Python API.
@@ -337,6 +395,75 @@ Then point the Gateway to llama.cpp:
 
 ```bash
 export TENX_LOCAL_OPENAI_BASE_URL=http://127.0.0.1:4000
+```
+
+## Install ComfyUI
+
+Use ComfyUI for the Gateway image and video models:
+
+```text
+qwen-image
+flux-dev
+HunyuanVideo-1.5
+Wan2.2-TI2V-5B
+```
+
+Recommended placement:
+
+```text
+Mac Studio
+  ComfyUI:8188
+  image-adapter:4010
+  video-adapter:4020
+  tenx-ai-gateway:8088
+```
+
+Install dependencies and clone ComfyUI:
+
+```bash
+mkdir -p /Users/lijunwei/ai
+cd /Users/lijunwei/ai
+
+git clone https://github.com/comfyanonymous/ComfyUI.git
+cd ComfyUI
+
+python3.11 -m venv .venv
+source .venv/bin/activate
+
+pip install --upgrade pip
+pip install -r requirements.txt
+pip install "huggingface_hub[cli]"
+```
+
+Start ComfyUI:
+
+```bash
+cd /Users/lijunwei/ai/ComfyUI
+source .venv/bin/activate
+
+python main.py --listen 0.0.0.0 --port 8188
+```
+
+Open ComfyUI:
+
+```text
+http://<Mac-Studio-IP>:8188
+```
+
+After downloading the image and video models, load the matching workflow template in ComfyUI and run it once manually. Then connect it to the Gateway through `image-adapter` and `video-adapter`.
+
+Gateway environment:
+
+```bash
+export TENX_IMAGE_OPENAI_BASE_URL=http://127.0.0.1:4010
+export TENX_VIDEO_OPENAI_BASE_URL=http://127.0.0.1:4020
+```
+
+If the Gateway runs in Docker on the same Mac host, use:
+
+```bash
+TENX_IMAGE_OPENAI_BASE_URL=http://host.docker.internal:4010
+TENX_VIDEO_OPENAI_BASE_URL=http://host.docker.internal:4020
 ```
 
 ## Download ComfyUI Image And Video Models
