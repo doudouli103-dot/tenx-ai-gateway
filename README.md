@@ -125,6 +125,59 @@ http://192.168.x.x:8088/v1
 
 The Gateway only forwards requests. Chat will work only after the backend configured by `TENX_LOCAL_OPENAI_BASE_URL`, for example LiteLLM, vLLM, LM Studio, or another OpenAI-compatible service, is running and reachable.
 
+## Use With ZCode
+
+[ZCode](https://zcode.z.ai/cn) can use `tenx-ai-gateway` as a custom OpenAI-compatible provider.
+
+Start `tenx-ai-gateway` first:
+
+```bash
+cd /Users/lijunwei/PycharmProjects/tenx-ai-gateway
+TENX_AI_GATEWAY_API_KEYS=local-dev-key \
+TENX_LOCAL_OPENAI_BASE_URL=http://127.0.0.1:4000 \
+mvn spring-boot:run
+```
+
+In ZCode, open model settings and add a custom provider:
+
+```text
+Provider name:
+tenx-ai-gateway
+
+Protocol / API format:
+OpenAI Compatible / Chat Completions
+
+Base URL:
+http://127.0.0.1:8088/v1
+
+API Key:
+local-dev-key
+```
+
+Add models with the same real model names configured in `application.yml`:
+
+```text
+qwen3-coder-next
+gpt-oss-120b
+qwen-small
+gpt-5
+```
+
+If ZCode and `tenx-ai-gateway` are on different machines, replace `127.0.0.1` with the Gateway machine's LAN IP:
+
+```text
+http://192.168.x.x:8088/v1
+```
+
+Keep the Base URL at `/v1`. Do not enter `/v1/chat/completions`, because ZCode appends the chat endpoint path by itself.
+
+For V1, disable image or multimodal-only options in ZCode. This Gateway currently exposes chat endpoints only:
+
+```text
+GET  /v1/models
+POST /v1/chat/completions
+```
+
 ## Chat Example
 
 ```bash
