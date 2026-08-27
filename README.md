@@ -70,6 +70,61 @@ Health check:
 curl http://127.0.0.1:8088/healthz
 ```
 
+## Use With Open WebUI Docker
+
+When Open WebUI runs in Docker, `127.0.0.1` inside the container means the container itself, not the Mac host. Use `host.docker.internal` to let Open WebUI reach `tenx-ai-gateway` running on the host.
+
+Start `tenx-ai-gateway` first:
+
+```bash
+cd /Users/lijunwei/PycharmProjects/tenx-ai-gateway
+TENX_AI_GATEWAY_API_KEYS=local-dev-key \
+TENX_LOCAL_OPENAI_BASE_URL=http://127.0.0.1:4000 \
+mvn spring-boot:run
+```
+
+Then start Open WebUI:
+
+```bash
+docker run -d \
+  --name open-webui \
+  -p 3000:8080 \
+  -v open-webui:/app/backend/data \
+  -e OPENAI_API_BASE_URL=http://host.docker.internal:8088/v1 \
+  -e OPENAI_API_KEY=local-dev-key \
+  ghcr.io/open-webui/open-webui:main
+```
+
+Open the UI:
+
+```text
+http://127.0.0.1:3000
+```
+
+Open WebUI will call these Gateway endpoints:
+
+```text
+GET  http://host.docker.internal:8088/v1/models
+POST http://host.docker.internal:8088/v1/chat/completions
+```
+
+The model list should show the configured real model names:
+
+```text
+qwen3-coder-next
+gpt-oss-120b
+qwen-small
+gpt-5
+```
+
+If Open WebUI and `tenx-ai-gateway` are on different machines, replace `host.docker.internal` with the Gateway machine's LAN IP:
+
+```text
+http://192.168.x.x:8088/v1
+```
+
+The Gateway only forwards requests. Chat will work only after the backend configured by `TENX_LOCAL_OPENAI_BASE_URL`, for example LiteLLM, vLLM, LM Studio, or another OpenAI-compatible service, is running and reachable.
+
 ## Chat Example
 
 ```bash
