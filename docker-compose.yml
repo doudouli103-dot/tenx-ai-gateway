@@ -1,0 +1,18 @@
+services:
+  tenx-ai-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tenx-ai-gateway:latest
+    container_name: tenx-ai-gateway
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    environment:
+      TENX_AI_GATEWAY_API_KEYS: ${TENX_AI_GATEWAY_API_KEYS:-local-dev-key}
+      TENX_LOCAL_OPENAI_BASE_URL: ${TENX_LOCAL_OPENAI_BASE_URL:-http://host.docker.internal:4000}
+      TENX_LOCAL_OPENAI_API_KEY: ${TENX_LOCAL_OPENAI_API_KEY:-}
+      TENX_CLOUD_OPENAI_BASE_URL: ${TENX_CLOUD_OPENAI_BASE_URL:-https://api.openai.com}
+      TENX_CLOUD_OPENAI_API_KEY: ${TENX_CLOUD_OPENAI_API_KEY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

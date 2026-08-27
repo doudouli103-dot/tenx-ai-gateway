@@ -70,6 +70,91 @@ Health check:
 curl http://127.0.0.1:8088/healthz
 ```
 
+## Docker Deployment
+
+Docker Compose is the recommended long-running deployment mode for `tenx-ai-gateway`. For the current local AI architecture, deploy it on the Mac Studio or the machine closest to the model services.
+
+Recommended placement:
+
+```text
+MacBook Pro / ZCode / Open WebUI / Java Agent
+        ↓
+http://Mac-Studio-IP:8088/v1
+        ↓
+tenx-ai-gateway
+        ↓
+LiteLLM / vLLM / LM Studio / Ollama-compatible proxy
+        ↓
+Local models
+```
+
+Build and start:
+
+```bash
+cd /Users/lijunwei/PycharmProjects/tenx-ai-gateway
+docker compose up -d --build
+```
+
+Check service status:
+
+```bash
+docker compose ps
+docker compose logs -f tenx-ai-gateway
+curl http://127.0.0.1:8088/healthz
+```
+
+Stop:
+
+```bash
+docker compose down
+```
+
+Restart after configuration changes:
+
+```bash
+docker compose up -d --build
+```
+
+Default Docker environment:
+
+```yaml
+TENX_AI_GATEWAY_API_KEYS: local-dev-key
+TENX_LOCAL_OPENAI_BASE_URL: http://host.docker.internal:4000
+TENX_CLOUD_OPENAI_BASE_URL: https://api.openai.com
+```
+
+Use `host.docker.internal` when the backend model service runs directly on the Mac host, outside Docker. For example, if LiteLLM, LM Studio, or another OpenAI-compatible service listens on the host at `127.0.0.1:4000`, the Gateway container should use:
+
+```bash
+TENX_LOCAL_OPENAI_BASE_URL=http://host.docker.internal:4000
+```
+
+Use a Compose service name when the backend model service is in the same `docker-compose.yml`. For example:
+
+```bash
+TENX_LOCAL_OPENAI_BASE_URL=http://litellm:4000
+```
+
+To override settings without editing `docker-compose.yml`, create a local `.env` file next to it:
+
+```bash
+TENX_AI_GATEWAY_API_KEYS=local-dev-key,github-agent-key,zcode-key
+TENX_LOCAL_OPENAI_BASE_URL=http://host.docker.internal:4000
+TENX_LOCAL_OPENAI_API_KEY=
+TENX_CLOUD_OPENAI_BASE_URL=https://api.openai.com
+TENX_CLOUD_OPENAI_API_KEY=
+```
+
+Do not commit `.env`. It is already ignored by `.gitignore` and `.dockerignore`.
+
+After startup, clients should use:
+
+```text
+Base URL: http://<Gateway-IP>:8088/v1
+API Key:  one value from TENX_AI_GATEWAY_API_KEYS
+Model:    qwen3-coder-next or another configured real model name
+```
+
 ## Use With Open WebUI Docker
 
 When Open WebUI runs in Docker, `127.0.0.1` inside the container means the container itself, not the Mac host. Use `host.docker.internal` to let Open WebUI reach `tenx-ai-gateway` running on the host.
