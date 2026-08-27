@@ -23,7 +23,7 @@ tenx:
           base-url: ${TENX_CLOUD_OPENAI_BASE_URL:https://api.openai.com}
           api-key: ${TENX_CLOUD_OPENAI_API_KEY:}
       document-center:
-        base-url: ${TENX_DOCUMENT_CENTER_BASE_URL:http://127.0.0.1:9000}
+        base-url: ${TENX_DOCUMENT_CENTER_BASE_URL:http://127.0.0.1:8081}
         upload-path: ${TENX_DOCUMENT_CENTER_UPLOAD_PATH:/api/files}
       routes:
         qwen3-coder-next:

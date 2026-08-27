@@ -43,7 +43,7 @@ export TENX_VIDEO_OPENAI_BASE_URL=http://127.0.0.1:4020
 export TENX_VIDEO_OPENAI_API_KEY=
 export TENX_CLOUD_OPENAI_BASE_URL=https://api.openai.com
 export TENX_CLOUD_OPENAI_API_KEY=your-cloud-key
-export TENX_DOCUMENT_CENTER_BASE_URL=http://127.0.0.1:9000
+export TENX_DOCUMENT_CENTER_BASE_URL=http://127.0.0.1:8081
 export TENX_DOCUMENT_CENTER_UPLOAD_PATH=/api/files
 ```
 
@@ -160,7 +160,7 @@ TENX_AI_GATEWAY_API_KEYS: local-dev-key
 TENX_LOCAL_OPENAI_BASE_URL: http://host.docker.internal:4000
 TENX_IMAGE_OPENAI_BASE_URL: http://host.docker.internal:4010
 TENX_VIDEO_OPENAI_BASE_URL: http://host.docker.internal:4020
-TENX_DOCUMENT_CENTER_BASE_URL: http://host.docker.internal:9000
+TENX_DOCUMENT_CENTER_BASE_URL: http://host.docker.internal:8081
 TENX_CLOUD_OPENAI_BASE_URL: https://api.openai.com
 ```
 
@@ -188,7 +188,7 @@ TENX_VIDEO_OPENAI_BASE_URL=http://host.docker.internal:4020
 TENX_VIDEO_OPENAI_API_KEY=
 TENX_CLOUD_OPENAI_BASE_URL=https://api.openai.com
 TENX_CLOUD_OPENAI_API_KEY=
-TENX_DOCUMENT_CENTER_BASE_URL=http://host.docker.internal:9000
+TENX_DOCUMENT_CENTER_BASE_URL=http://host.docker.internal:8081
 TENX_DOCUMENT_CENTER_UPLOAD_PATH=/api/files
 ```
 
@@ -252,7 +252,7 @@ The Gateway uploads the image to the document center and returns:
   "data": [
     {
       "file_id": "doc-file-001",
-      "url": "http://Windows-IP:9000/files/doc-file-001.png"
+      "url": "http://Windows-IP:8081/api/files/doc-file-001/download"
     }
   ]
 }
@@ -302,7 +302,7 @@ Succeeded response:
   "task_id": "video-task-...",
   "status": "succeeded",
   "file_id": "doc-file-002",
-  "result_url": "http://Windows-IP:9000/files/doc-file-002.mp4"
+  "result_url": "http://Windows-IP:8081/api/files/doc-file-002/download"
 }
 ```
 
