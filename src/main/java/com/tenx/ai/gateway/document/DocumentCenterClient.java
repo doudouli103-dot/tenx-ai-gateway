@@ -1,8 +1,11 @@
 package com.tenx.ai.gateway.document;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tenx.ai.gateway.config.GatewayProperties;
 import com.tenx.ai.gateway.model.GeneratedAsset;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
@@ -16,10 +19,12 @@ public class DocumentCenterClient {
 
     private final GatewayProperties properties;
     private final WebClient.Builder webClientBuilder;
+    private final ObjectMapper objectMapper;
 
-    public DocumentCenterClient(GatewayProperties properties, WebClient.Builder webClientBuilder) {
+    public DocumentCenterClient(GatewayProperties properties, WebClient.Builder webClientBuilder, ObjectMapper objectMapper) {
         this.properties = properties;
         this.webClientBuilder = webClientBuilder;
+        this.objectMapper = objectMapper;
     }
 
     public Mono<DocumentUploadResult> upload(String bizType, String sourceModel, GeneratedAsset asset) {
@@ -32,9 +37,8 @@ public class DocumentCenterClient {
         bodyBuilder.part("file", new NamedByteArrayResource(asset.getBytes(), asset.getFileName()))
                 .filename(asset.getFileName())
                 .contentType(MediaType.parseMediaType(asset.getContentType()));
-        bodyBuilder.part("bizType", bizType);
-        bodyBuilder.part("source", "tenx-ai-gateway");
-        bodyBuilder.part("model", sourceModel);
+        bodyBuilder.part("category", bizType);
+        bodyBuilder.part("remark", buildRemark(bizType, sourceModel));
 
         return webClientBuilder.clone()
                 .baseUrl(config.getBaseUrl())
@@ -49,16 +53,36 @@ public class DocumentCenterClient {
     }
 
     private DocumentUploadResult toUploadResult(JsonNode node) {
+        JsonNode code = node.get("code");
+        if (code != null && code.canConvertToInt() && code.asInt() != 0) {
+            throw new IllegalStateException("Document center upload failed: " + text(node, "message", "unknown error"));
+        }
+
+        JsonNode payload = node.has("data") && node.get("data") != null && !node.get("data").isNull()
+                ? node.get("data")
+                : node;
         DocumentUploadResult result = new DocumentUploadResult();
-        result.setFileId(text(node, "fileId", text(node, "id", null)));
-        result.setUrl(text(node, "url", text(node, "fileUrl", text(node, "downloadUrl", null))));
-        result.setFileName(text(node, "fileName", null));
-        result.setContentType(text(node, "contentType", null));
-        JsonNode sizeNode = node.get("size");
+        result.setFileId(text(payload, "fileId", text(payload, "id", null)));
+        result.setUrl(text(payload, "url", text(payload, "fileUrl", text(payload, "downloadUrl", null))));
+        result.setFileName(text(payload, "fileName", null));
+        result.setContentType(text(payload, "contentType", text(payload, "fileType", null)));
+        JsonNode sizeNode = payload.has("size") ? payload.get("size") : payload.get("fileSize");
         if (sizeNode != null && sizeNode.canConvertToLong()) {
             result.setSize(sizeNode.asLong());
         }
         return result;
+    }
+
+    private String buildRemark(String bizType, String sourceModel) {
+        Map<String, String> remark = new LinkedHashMap<String, String>();
+        remark.put("source", "tenx-ai-gateway");
+        remark.put("bizType", bizType);
+        remark.put("model", sourceModel);
+        try {
+            return objectMapper.writeValueAsString(remark);
+        } catch (Exception ignored) {
+            return "source=tenx-ai-gateway,bizType=" + bizType + ",model=" + sourceModel;
+        }
     }
 
     private String text(JsonNode node, String fieldName, String defaultValue) {

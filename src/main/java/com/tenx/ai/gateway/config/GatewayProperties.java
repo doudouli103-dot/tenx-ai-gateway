@@ -144,7 +144,7 @@ public class GatewayProperties {
 
     public static class DocumentCenterConfig {
         private String baseUrl;
-        private String uploadPath = "/api/files/upload";
+        private String uploadPath = "/api/files";
 
         public String getBaseUrl() {
             return baseUrl;

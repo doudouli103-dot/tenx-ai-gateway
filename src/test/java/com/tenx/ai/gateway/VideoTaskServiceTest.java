@@ -69,7 +69,7 @@ public class VideoTaskServiceTest {
 
     private static class StubDocumentCenterClient extends DocumentCenterClient {
         StubDocumentCenterClient() {
-            super(new GatewayProperties(), null);
+            super(new GatewayProperties(), null, null);
         }
 
         @Override

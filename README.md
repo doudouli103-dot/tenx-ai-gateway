@@ -44,7 +44,7 @@ export TENX_VIDEO_OPENAI_API_KEY=
 export TENX_CLOUD_OPENAI_BASE_URL=https://api.openai.com
 export TENX_CLOUD_OPENAI_API_KEY=your-cloud-key
 export TENX_DOCUMENT_CENTER_BASE_URL=http://127.0.0.1:9000
-export TENX_DOCUMENT_CENTER_UPLOAD_PATH=/api/files/upload
+export TENX_DOCUMENT_CENTER_UPLOAD_PATH=/api/files
 ```
 
 Default model routes:
@@ -189,7 +189,7 @@ TENX_VIDEO_OPENAI_API_KEY=
 TENX_CLOUD_OPENAI_BASE_URL=https://api.openai.com
 TENX_CLOUD_OPENAI_API_KEY=
 TENX_DOCUMENT_CENTER_BASE_URL=http://host.docker.internal:9000
-TENX_DOCUMENT_CENTER_UPLOAD_PATH=/api/files/upload
+TENX_DOCUMENT_CENTER_UPLOAD_PATH=/api/files
 ```
 
 Do not commit `.env`. It is already ignored by `.gitignore` and `.dockerignore`.
@@ -311,26 +311,31 @@ The video provider can return `b64_json`, `url`, or `video_url`. The Gateway upl
 The document center upload endpoint is expected to accept:
 
 ```text
-POST /api/files/upload
+POST /api/files
 Content-Type: multipart/form-data
 
 file=<binary>
-bizType=image_generation or video_generation
-source=tenx-ai-gateway
-model=<requested model name>
+category=image_generation or video_generation
+remark={"source":"tenx-ai-gateway","bizType":"image_generation","model":"qwen-image"}
 ```
 
-Expected document center response fields:
+The current `study-ai-document-center-backend` response is wrapped by `ApiResponse`:
 
 ```json
 {
-  "fileId": "doc-file-001",
-  "url": "http://Windows-IP:9000/files/doc-file-001.mp4",
-  "fileName": "doc-file-001.mp4",
-  "contentType": "video/mp4",
-  "size": 12345678
+  "code": 0,
+  "message": "ok",
+  "data": {
+    "fileId": "doc-file-001",
+    "downloadUrl": "http://Windows-IP:8081/api/files/doc-file-001/download",
+    "fileName": "doc-file-001.mp4",
+    "fileType": "video/mp4",
+    "fileSize": 12345678
+  }
 }
 ```
+
+The Gateway reads `data.fileId` and `data.downloadUrl`, then returns the document center download URL to the client.
 
 ## Use With Open WebUI Docker
 
