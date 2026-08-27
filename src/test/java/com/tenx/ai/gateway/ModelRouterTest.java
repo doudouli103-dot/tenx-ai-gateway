@@ -17,6 +17,7 @@ public class ModelRouterTest {
         ModelRoute route = router.route("qwen3-coder-next");
 
         Assertions.assertEquals("qwen3-coder-next", route.getRequestedModel());
+        Assertions.assertEquals("chat", route.getCapability());
         Assertions.assertEquals("local-compatible", route.getProviderName());
         Assertions.assertEquals("qwen3-coder-next", route.getModel());
         Assertions.assertEquals("openai-compatible", route.getProvider().getType());
@@ -47,6 +48,7 @@ public class ModelRouterTest {
         properties.getProviders().put("cloud-openai", cloud);
 
         GatewayProperties.RouteConfig qwenCoder = new GatewayProperties.RouteConfig();
+        qwenCoder.setCapability("chat");
         qwenCoder.setProvider("local-compatible");
         qwenCoder.setModel("qwen3-coder-next");
         qwenCoder.setFallbackProvider("cloud-openai");

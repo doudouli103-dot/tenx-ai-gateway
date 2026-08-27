@@ -10,22 +10,57 @@ tenx:
           type: openai-compatible
           base-url: ${TENX_LOCAL_OPENAI_BASE_URL:http://127.0.0.1:4000}
           api-key: ${TENX_LOCAL_OPENAI_API_KEY:}
+        image-compatible:
+          type: openai-image-compatible
+          base-url: ${TENX_IMAGE_OPENAI_BASE_URL:http://127.0.0.1:4010}
+          api-key: ${TENX_IMAGE_OPENAI_API_KEY:}
+        video-compatible:
+          type: openai-video-compatible
+          base-url: ${TENX_VIDEO_OPENAI_BASE_URL:http://127.0.0.1:4020}
+          api-key: ${TENX_VIDEO_OPENAI_API_KEY:}
         cloud-openai:
           type: openai-compatible
           base-url: ${TENX_CLOUD_OPENAI_BASE_URL:https://api.openai.com}
           api-key: ${TENX_CLOUD_OPENAI_API_KEY:}
+      document-center:
+        base-url: ${TENX_DOCUMENT_CENTER_BASE_URL:http://127.0.0.1:9000}
+        upload-path: ${TENX_DOCUMENT_CENTER_UPLOAD_PATH:/api/files/upload}
       routes:
         qwen3-coder-next:
+          capability: chat
           provider: local-compatible
           model: qwen3-coder-next
           fallback-provider: cloud-openai
           fallback-model: gpt-5
         gpt-oss-120b:
+          capability: chat
           provider: local-compatible
           model: gpt-oss-120b
         qwen-small:
+          capability: chat
           provider: local-compatible
           model: qwen-small
         gpt-5:
+          capability: chat
           provider: cloud-openai
           model: gpt-5
+        qwen-image:
+          capability: image
+          provider: image-compatible
+          model: qwen-image
+        flux-dev:
+          capability: image
+          provider: image-compatible
+          model: flux-dev
+        "[wan2.2-ti2v-5b]":
+          capability: video
+          provider: video-compatible
+          model: wan2.2-ti2v-5b
+          default-duration-seconds: 5
+          max-duration-seconds: 5
+        "[wan2.2-i2v-a14b]":
+          capability: video
+          provider: video-compatible
+          model: wan2.2-i2v-a14b
+          default-duration-seconds: 5
+          max-duration-seconds: 5

@@ -12,6 +12,7 @@ public class GatewayProperties {
     private List<String> apiKeys = new ArrayList<String>();
     private Map<String, ProviderConfig> providers = new LinkedHashMap<String, ProviderConfig>();
     private Map<String, RouteConfig> routes = new LinkedHashMap<String, RouteConfig>();
+    private DocumentCenterConfig documentCenter = new DocumentCenterConfig();
 
     public List<String> getApiKeys() {
         return apiKeys;
@@ -35,6 +36,14 @@ public class GatewayProperties {
 
     public void setRoutes(Map<String, RouteConfig> routes) {
         this.routes = routes;
+    }
+
+    public DocumentCenterConfig getDocumentCenter() {
+        return documentCenter;
+    }
+
+    public void setDocumentCenter(DocumentCenterConfig documentCenter) {
+        this.documentCenter = documentCenter;
     }
 
     public static class ProviderConfig {
@@ -68,10 +77,21 @@ public class GatewayProperties {
     }
 
     public static class RouteConfig {
+        private String capability = "chat";
         private String provider;
         private String model;
         private String fallbackProvider;
         private String fallbackModel;
+        private Integer defaultDurationSeconds;
+        private Integer maxDurationSeconds;
+
+        public String getCapability() {
+            return capability;
+        }
+
+        public void setCapability(String capability) {
+            this.capability = capability;
+        }
 
         public String getProvider() {
             return provider;
@@ -103,6 +123,43 @@ public class GatewayProperties {
 
         public void setFallbackModel(String fallbackModel) {
             this.fallbackModel = fallbackModel;
+        }
+
+        public Integer getDefaultDurationSeconds() {
+            return defaultDurationSeconds;
+        }
+
+        public void setDefaultDurationSeconds(Integer defaultDurationSeconds) {
+            this.defaultDurationSeconds = defaultDurationSeconds;
+        }
+
+        public Integer getMaxDurationSeconds() {
+            return maxDurationSeconds;
+        }
+
+        public void setMaxDurationSeconds(Integer maxDurationSeconds) {
+            this.maxDurationSeconds = maxDurationSeconds;
+        }
+    }
+
+    public static class DocumentCenterConfig {
+        private String baseUrl;
+        private String uploadPath = "/api/files/upload";
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        public String getUploadPath() {
+            return uploadPath;
+        }
+
+        public void setUploadPath(String uploadPath) {
+            this.uploadPath = uploadPath;
         }
     }
 }

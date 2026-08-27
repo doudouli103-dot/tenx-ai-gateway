@@ -25,6 +25,7 @@ public class ModelController {
             Map<String, String> model = new LinkedHashMap<String, String>();
             model.put("id", modelName);
             model.put("object", "model");
+            model.put("capability", properties.getRoutes().get(modelName).getCapability());
             data.add(model);
         }
 

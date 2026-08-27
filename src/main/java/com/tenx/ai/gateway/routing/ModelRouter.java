@@ -33,12 +33,15 @@ public class ModelRouter {
 
         return new ModelRoute(
                 requestedModel,
+                routeConfig.getCapability(),
                 routeConfig.getProvider(),
                 routeConfig.getModel(),
                 provider,
                 routeConfig.getFallbackProvider(),
                 routeConfig.getFallbackModel(),
-                fallbackProvider
+                fallbackProvider,
+                routeConfig.getDefaultDurationSeconds(),
+                routeConfig.getMaxDurationSeconds()
         );
     }
 }

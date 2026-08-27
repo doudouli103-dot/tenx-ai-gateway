@@ -6,10 +6,8 @@ import com.tenx.ai.gateway.provider.ModelProvider;
 import com.tenx.ai.gateway.provider.ModelProviderRegistry;
 import com.tenx.ai.gateway.routing.ModelRoute;
 import com.tenx.ai.gateway.routing.ModelRouter;
-import com.tenx.ai.gateway.routing.UnknownModelException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,6 +29,9 @@ public class OpenAiController {
     @PostMapping(value = "/v1/chat/completions", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<?>> chatCompletions(@RequestBody ChatRequest request) {
         ModelRoute route = modelRouter.route(request.getModel());
+        if (!route.isCapability("chat")) {
+            return Mono.error(new IllegalArgumentException("Model is not configured for chat completions: " + request.getModel()));
+        }
         if (request.isStream()) {
             Flux<String> stream = streamWithRoute(request, route);
             return Mono.just(ResponseEntity.ok()
@@ -44,11 +45,6 @@ public class OpenAiController {
     @GetMapping("/healthz")
     public Mono<ResponseEntity<String>> healthz() {
         return Mono.just(ResponseEntity.ok("ok"));
-    }
-
-    @ExceptionHandler(UnknownModelException.class)
-    public Mono<ResponseEntity<String>> unknownModel(UnknownModelException exception) {
-        return Mono.just(ResponseEntity.badRequest().body(exception.getMessage()));
     }
 
     private Mono<JsonNode> chatWithRoute(ChatRequest request, ModelRoute route) {
