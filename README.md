@@ -339,6 +339,226 @@ Then point the Gateway to llama.cpp:
 export TENX_LOCAL_OPENAI_BASE_URL=http://127.0.0.1:4000
 ```
 
+## Download ComfyUI Image And Video Models
+
+Use this Python class to download the Gateway image and video models through the Hugging Face Python API, then install the downloaded files into a ComfyUI directory.
+
+It applies to these Gateway models:
+
+```text
+qwen-image
+flux-dev
+HunyuanVideo-1.5
+Wan2.2-TI2V-5B
+```
+
+Install the dependency:
+
+```bash
+pip install huggingface_hub
+```
+
+Python code:
+
+```python
+from dataclasses import dataclass
+from pathlib import Path
+from shutil import copy2
+from typing import Dict, List, Optional
+
+from huggingface_hub import snapshot_download
+
+
+@dataclass(frozen=True)
+class ComfyModelFile:
+    source_path: str
+    target_subdir: str
+
+
+@dataclass(frozen=True)
+class ComfyModelSpec:
+    model_name: str
+    repo_id: str
+    files: List[ComfyModelFile]
+
+    def allow_patterns(self) -> List[str]:
+        return [model_file.source_path for model_file in self.files]
+
+
+class ComfyModelDownloader:
+    MODEL_SPECS: Dict[str, ComfyModelSpec] = {
+        "qwen-image": ComfyModelSpec(
+            model_name="qwen-image",
+            repo_id="Comfy-Org/Qwen-Image_ComfyUI",
+            files=[
+                ComfyModelFile(
+                    "split_files/diffusion_models/qwen_image_fp8_e4m3fn.safetensors",
+                    "models/diffusion_models",
+                ),
+                ComfyModelFile(
+                    "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+                    "models/text_encoders",
+                ),
+                ComfyModelFile(
+                    "split_files/vae/qwen_image_vae.safetensors",
+                    "models/vae",
+                ),
+            ],
+        ),
+        "flux-dev": ComfyModelSpec(
+            model_name="flux-dev",
+            repo_id="Comfy-Org/flux1-dev",
+            files=[
+                ComfyModelFile(
+                    "flux1-dev-fp8.safetensors",
+                    "models/checkpoints",
+                ),
+            ],
+        ),
+        "HunyuanVideo-1.5": ComfyModelSpec(
+            model_name="HunyuanVideo-1.5",
+            repo_id="Comfy-Org/HunyuanVideo_1.5_repackaged",
+            files=[
+                ComfyModelFile(
+                    "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+                    "models/text_encoders",
+                ),
+                ComfyModelFile(
+                    "split_files/text_encoders/byt5_small_glyphxl_fp16.safetensors",
+                    "models/text_encoders",
+                ),
+                ComfyModelFile(
+                    "split_files/vae/hunyuanvideo15_vae_fp16.safetensors",
+                    "models/vae",
+                ),
+                ComfyModelFile(
+                    "split_files/diffusion_models/hunyuanvideo1.5_720p_t2v_fp16.safetensors",
+                    "models/diffusion_models",
+                ),
+            ],
+        ),
+        "Wan2.2-TI2V-5B": ComfyModelSpec(
+            model_name="Wan2.2-TI2V-5B",
+            repo_id="Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+            files=[
+                ComfyModelFile(
+                    "split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors",
+                    "models/diffusion_models",
+                ),
+                ComfyModelFile(
+                    "split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+                    "models/text_encoders",
+                ),
+                ComfyModelFile(
+                    "split_files/vae/wan2.2_vae.safetensors",
+                    "models/vae",
+                ),
+            ],
+        ),
+    }
+
+    def __init__(
+        self,
+        download_root: str,
+        comfy_dir: str,
+        token: Optional[str] = None,
+        revision: Optional[str] = None,
+    ):
+        self.download_root = Path(download_root).expanduser().resolve()
+        self.comfy_dir = Path(comfy_dir).expanduser().resolve()
+        self.token = token
+        self.revision = revision
+
+    def download(self, model_name: str) -> Path:
+        spec = self._get_model_spec(model_name)
+        target_dir = self.download_root / spec.model_name
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        local_path = snapshot_download(
+            repo_id=spec.repo_id,
+            repo_type="model",
+            revision=self.revision,
+            local_dir=str(target_dir),
+            allow_patterns=spec.allow_patterns(),
+            token=self.token,
+            local_dir_use_symlinks=False,
+        )
+
+        return Path(local_path).resolve()
+
+    def install(self, model_name: str) -> Dict[str, Path]:
+        spec = self._get_model_spec(model_name)
+        downloaded_dir = self.download(model_name)
+
+        installed_files = {}
+        for model_file in spec.files:
+            source = downloaded_dir / model_file.source_path
+            target_dir = self.comfy_dir / model_file.target_subdir
+            target_dir.mkdir(parents=True, exist_ok=True)
+
+            target = target_dir / source.name
+            copy2(str(source), str(target))
+            installed_files[model_file.source_path] = target
+
+        return installed_files
+
+    def install_all(self) -> Dict[str, Dict[str, Path]]:
+        result = {}
+        for model_name in self.MODEL_SPECS:
+            result[model_name] = self.install(model_name)
+        return result
+
+    def list_supported_models(self) -> List[str]:
+        return list(self.MODEL_SPECS.keys())
+
+    def _get_model_spec(self, model_name: str) -> ComfyModelSpec:
+        spec = self.MODEL_SPECS.get(model_name)
+        if spec is None:
+            supported = ", ".join(self.list_supported_models())
+            raise ValueError(f"Unsupported model: {model_name}. Supported: {supported}")
+        return spec
+
+
+if __name__ == "__main__":
+    import os
+
+    downloader = ComfyModelDownloader(
+        download_root="/Users/lijunwei/ai-model-downloads",
+        comfy_dir="/Users/lijunwei/ai/ComfyUI",
+        token=os.getenv("HF_TOKEN"),
+    )
+
+    result = downloader.install_all()
+
+    for model_name, files in result.items():
+        print(model_name)
+        for source_path, target_path in files.items():
+            print(f"  {source_path} -> {target_path}")
+```
+
+Run it:
+
+```bash
+export HF_TOKEN=your_hugging_face_token
+python download_comfy_models.py
+```
+
+Start ComfyUI:
+
+```bash
+cd /Users/lijunwei/ai/ComfyUI
+source .venv/bin/activate
+python main.py --listen 0.0.0.0 --port 8188
+```
+
+Open ComfyUI:
+
+```text
+http://<Mac-Studio-IP>:8188
+```
+
+Then load the matching workflow template for `qwen-image`, `flux-dev`, `HunyuanVideo-1.5`, or `Wan2.2-TI2V-5B`.
+
 ## Image And Video Generation
 
 Recommended video models:
