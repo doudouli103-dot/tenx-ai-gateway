@@ -4,7 +4,7 @@ import com.tenx.ai.gateway.config.GatewayProperties;
 
 public class ModelRoute {
 
-    private final String alias;
+    private final String requestedModel;
     private final String providerName;
     private final String model;
     private final GatewayProperties.ProviderConfig provider;
@@ -12,11 +12,11 @@ public class ModelRoute {
     private final String fallbackModel;
     private final GatewayProperties.ProviderConfig fallbackProvider;
 
-    public ModelRoute(String alias, String providerName, String model,
+    public ModelRoute(String requestedModel, String providerName, String model,
                       GatewayProperties.ProviderConfig provider,
                       String fallbackProviderName, String fallbackModel,
                       GatewayProperties.ProviderConfig fallbackProvider) {
-        this.alias = alias;
+        this.requestedModel = requestedModel;
         this.providerName = providerName;
         this.model = model;
         this.provider = provider;
@@ -25,8 +25,8 @@ public class ModelRoute {
         this.fallbackProvider = fallbackProvider;
     }
 
-    public String getAlias() {
-        return alias;
+    public String getRequestedModel() {
+        return requestedModel;
     }
 
     public String getProviderName() {

@@ -15,17 +15,17 @@ tenx:
           base-url: ${TENX_CLOUD_OPENAI_BASE_URL:https://api.openai.com}
           api-key: ${TENX_CLOUD_OPENAI_API_KEY:}
       routes:
-        coder:
+        qwen3-coder-next:
           provider: local-compatible
           model: qwen3-coder-next
           fallback-provider: cloud-openai
           fallback-model: gpt-5
-        general:
+        gpt-oss-120b:
           provider: local-compatible
           model: gpt-oss-120b
-        fast:
+        qwen-small:
           provider: local-compatible
           model: qwen-small
-        cloud:
+        gpt-5:
           provider: cloud-openai
           model: gpt-5

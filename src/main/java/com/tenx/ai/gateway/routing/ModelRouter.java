@@ -12,10 +12,10 @@ public class ModelRouter {
         this.properties = properties;
     }
 
-    public ModelRoute route(String alias) {
-        GatewayProperties.RouteConfig routeConfig = properties.getRoutes().get(alias);
+    public ModelRoute route(String requestedModel) {
+        GatewayProperties.RouteConfig routeConfig = properties.getRoutes().get(requestedModel);
         if (routeConfig == null) {
-            throw new UnknownModelException(alias);
+            throw new UnknownModelException(requestedModel);
         }
 
         GatewayProperties.ProviderConfig provider = properties.getProviders().get(routeConfig.getProvider());
@@ -32,7 +32,7 @@ public class ModelRouter {
         }
 
         return new ModelRoute(
-                alias,
+                requestedModel,
                 routeConfig.getProvider(),
                 routeConfig.getModel(),
                 provider,

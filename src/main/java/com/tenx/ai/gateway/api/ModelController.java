@@ -21,9 +21,9 @@ public class ModelController {
     @GetMapping("/v1/models")
     public ResponseEntity<Map<String, Object>> models() {
         List<Map<String, String>> data = new ArrayList<Map<String, String>>();
-        for (String alias : properties.getRoutes().keySet()) {
+        for (String modelName : properties.getRoutes().keySet()) {
             Map<String, String> model = new LinkedHashMap<String, String>();
-            model.put("id", alias);
+            model.put("id", modelName);
             model.put("object", "model");
             data.add(model);
         }

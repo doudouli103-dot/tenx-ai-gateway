@@ -8,7 +8,7 @@
 - `GET /v1/models`
 - `GET /healthz`
 - OpenAI-compatible chat request forwarding
-- Model aliases such as `coder`, `general`, `fast`, and `cloud`
+- Direct model names in the request, such as `qwen3-coder-next` and `gpt-oss-120b`
 - Provider routing through configuration
 - One-level fallback for non-streaming and streaming calls
 - API Key authentication with `Authorization: Bearer <key>`
@@ -35,22 +35,22 @@ export TENX_CLOUD_OPENAI_BASE_URL=https://api.openai.com
 export TENX_CLOUD_OPENAI_API_KEY=your-cloud-key
 ```
 
-Default model aliases:
+Default model routes:
 
 ```yaml
 routes:
-  coder:
+  qwen3-coder-next:
     provider: local-compatible
     model: qwen3-coder-next
     fallback-provider: cloud-openai
     fallback-model: gpt-5
-  general:
+  gpt-oss-120b:
     provider: local-compatible
     model: gpt-oss-120b
-  fast:
+  qwen-small:
     provider: local-compatible
     model: qwen-small
-  cloud:
+  gpt-5:
     provider: cloud-openai
     model: gpt-5
 ```
@@ -77,7 +77,7 @@ curl -s http://127.0.0.1:8088/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer local-dev-key' \
   -d '{
-    "model": "coder",
+    "model": "qwen3-coder-next",
     "messages": [
       {"role": "system", "content": "You are a senior Java engineer."},
       {"role": "user", "content": "分析这个 Spring Boot 项目"}
@@ -93,7 +93,7 @@ curl -N http://127.0.0.1:8088/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer local-dev-key' \
   -d '{
-    "model": "coder",
+    "model": "qwen3-coder-next",
     "stream": true,
     "messages": [
       {"role": "user", "content": "写一个 Java Controller 示例"}

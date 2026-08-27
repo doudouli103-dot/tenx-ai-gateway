@@ -10,13 +10,13 @@ import org.junit.jupiter.api.Test;
 public class ModelRouterTest {
 
     @Test
-    public void routeResolvesAliasToProviderAndRealModel() {
+    public void routeResolvesModelNameToProviderAndRealModel() {
         GatewayProperties properties = sampleProperties();
         ModelRouter router = new ModelRouter(properties);
 
-        ModelRoute route = router.route("coder");
+        ModelRoute route = router.route("qwen3-coder-next");
 
-        Assertions.assertEquals("coder", route.getAlias());
+        Assertions.assertEquals("qwen3-coder-next", route.getRequestedModel());
         Assertions.assertEquals("local-compatible", route.getProviderName());
         Assertions.assertEquals("qwen3-coder-next", route.getModel());
         Assertions.assertEquals("openai-compatible", route.getProvider().getType());
@@ -26,7 +26,7 @@ public class ModelRouterTest {
     }
 
     @Test
-    public void routeRejectsUnknownAlias() {
+    public void routeRejectsUnknownModelName() {
         GatewayProperties properties = sampleProperties();
         ModelRouter router = new ModelRouter(properties);
 
@@ -46,12 +46,12 @@ public class ModelRouterTest {
         cloud.setBaseUrl("https://api.openai.com");
         properties.getProviders().put("cloud-openai", cloud);
 
-        GatewayProperties.RouteConfig coder = new GatewayProperties.RouteConfig();
-        coder.setProvider("local-compatible");
-        coder.setModel("qwen3-coder-next");
-        coder.setFallbackProvider("cloud-openai");
-        coder.setFallbackModel("gpt-5");
-        properties.getRoutes().put("coder", coder);
+        GatewayProperties.RouteConfig qwenCoder = new GatewayProperties.RouteConfig();
+        qwenCoder.setProvider("local-compatible");
+        qwenCoder.setModel("qwen3-coder-next");
+        qwenCoder.setFallbackProvider("cloud-openai");
+        qwenCoder.setFallbackModel("gpt-5");
+        properties.getRoutes().put("qwen3-coder-next", qwenCoder);
 
         return properties;
     }
