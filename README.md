@@ -77,16 +77,16 @@ routes:
     capability: image
     provider: image-compatible
     model: flux-dev
-  "[wan2.2-ti2v-5b]":
+  "[HunyuanVideo-1.5]":
     capability: video
     provider: video-compatible
-    model: wan2.2-ti2v-5b
+    model: HunyuanVideo-1.5
     default-duration-seconds: 5
     max-duration-seconds: 5
-  "[wan2.2-i2v-a14b]":
+  "[Wan2.2-TI2V-5B]":
     capability: video
     provider: video-compatible
-    model: wan2.2-i2v-a14b
+    model: Wan2.2-TI2V-5B
     default-duration-seconds: 5
     max-duration-seconds: 5
 ```
@@ -204,6 +204,15 @@ Model:    qwen3-coder-next or another configured real model name
 
 ## Image And Video Generation
 
+Recommended video models:
+
+```text
+HunyuanVideo-1.5  -> highest overall generation quality
+Wan2.2-TI2V-5B   -> stable, mature, and ecosystem-friendly
+```
+
+Use the exact model name in the request. The Gateway does not use video aliases.
+
 Image generation uses an OpenAI-compatible endpoint:
 
 ```text
@@ -272,7 +281,7 @@ curl -s http://127.0.0.1:8088/v1/videos/generations \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer local-dev-key' \
   -d '{
-    "model": "wan2.2-ti2v-5b",
+    "model": "Wan2.2-TI2V-5B",
     "prompt": "一个 5 秒的科技感视频",
     "duration": 5,
     "size": "1280x720"
@@ -384,8 +393,8 @@ qwen-small
 gpt-5
 qwen-image
 flux-dev
-wan2.2-ti2v-5b
-wan2.2-i2v-a14b
+HunyuanVideo-1.5
+Wan2.2-TI2V-5B
 ```
 
 If Open WebUI and `tenx-ai-gateway` are on different machines, replace `host.docker.internal` with the Gateway machine's LAN IP:

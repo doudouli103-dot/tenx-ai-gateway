@@ -25,7 +25,7 @@ public class VideoTaskServiceTest {
         );
 
         VideoGenerationRequest request = new VideoGenerationRequest();
-        request.setModel("wan2.2-ti2v-5b");
+        request.setModel("Wan2.2-TI2V-5B");
         request.setPrompt("test");
         request.setDuration(Integer.valueOf(6));
 
@@ -47,10 +47,10 @@ public class VideoTaskServiceTest {
         GatewayProperties.RouteConfig route = new GatewayProperties.RouteConfig();
         route.setCapability("video");
         route.setProvider("video-compatible");
-        route.setModel("wan2.2-ti2v-5b");
+        route.setModel("Wan2.2-TI2V-5B");
         route.setDefaultDurationSeconds(Integer.valueOf(5));
         route.setMaxDurationSeconds(Integer.valueOf(5));
-        properties.getRoutes().put("wan2.2-ti2v-5b", route);
+        properties.getRoutes().put("Wan2.2-TI2V-5B", route);
 
         return properties;
     }

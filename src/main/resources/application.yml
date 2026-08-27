@@ -52,15 +52,15 @@ tenx:
           capability: image
           provider: image-compatible
           model: flux-dev
-        "[wan2.2-ti2v-5b]":
+        "[HunyuanVideo-1.5]":
           capability: video
           provider: video-compatible
-          model: wan2.2-ti2v-5b
+          model: HunyuanVideo-1.5
           default-duration-seconds: 5
           max-duration-seconds: 5
-        "[wan2.2-i2v-a14b]":
+        "[Wan2.2-TI2V-5B]":
           capability: video
           provider: video-compatible
-          model: wan2.2-i2v-a14b
+          model: Wan2.2-TI2V-5B
           default-duration-seconds: 5
           max-duration-seconds: 5

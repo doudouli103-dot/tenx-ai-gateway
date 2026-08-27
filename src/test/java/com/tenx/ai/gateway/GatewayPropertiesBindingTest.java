@@ -14,12 +14,12 @@ public class GatewayPropertiesBindingTest {
 
     @Test
     public void bindsModelNamesThatContainDots() {
-        Assertions.assertTrue(properties.getRoutes().containsKey("wan2.2-ti2v-5b"));
-        Assertions.assertEquals("video", properties.getRoutes().get("wan2.2-ti2v-5b").getCapability());
-        Assertions.assertEquals(Integer.valueOf(5), properties.getRoutes().get("wan2.2-ti2v-5b").getMaxDurationSeconds());
+        Assertions.assertTrue(properties.getRoutes().containsKey("HunyuanVideo-1.5"));
+        Assertions.assertEquals("video", properties.getRoutes().get("HunyuanVideo-1.5").getCapability());
+        Assertions.assertEquals(Integer.valueOf(5), properties.getRoutes().get("HunyuanVideo-1.5").getMaxDurationSeconds());
 
-        Assertions.assertTrue(properties.getRoutes().containsKey("wan2.2-i2v-a14b"));
-        Assertions.assertEquals("video", properties.getRoutes().get("wan2.2-i2v-a14b").getCapability());
-        Assertions.assertEquals(Integer.valueOf(5), properties.getRoutes().get("wan2.2-i2v-a14b").getDefaultDurationSeconds());
+        Assertions.assertTrue(properties.getRoutes().containsKey("Wan2.2-TI2V-5B"));
+        Assertions.assertEquals("video", properties.getRoutes().get("Wan2.2-TI2V-5B").getCapability());
+        Assertions.assertEquals(Integer.valueOf(5), properties.getRoutes().get("Wan2.2-TI2V-5B").getDefaultDurationSeconds());
     }
 }
