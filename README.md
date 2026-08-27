@@ -2,6 +2,70 @@
 
 `tenx-ai-gateway` is a Java Spring Boot AI Gateway that exposes an OpenAI-compatible entry point for local and cloud models.
 
+## Release Summary
+
+This version focuses on model onboarding, model download guides, deployment notes, and clearer runtime boundaries for `tenx-ai-gateway`.
+
+`tenx-ai-gateway` does not start model runtimes and does not manage model weights directly. It stays at the gateway layer: unified entry point, API key authentication, model routing, request forwarding, fallback routing, and generated file upload forwarding.
+
+Runtime ownership is split by model type:
+
+- Chat models run behind `llama.cpp` or another OpenAI-compatible text inference service.
+- Image models run behind `ComfyUI` through `image-adapter`.
+- Video models run behind `ComfyUI` through `video-adapter`.
+- Generated image and video files are uploaded to the document center, and clients receive document center URLs.
+
+Recommended model placement:
+
+| Model | Type | Runtime | Download mode |
+| --- | --- | --- | --- |
+| `qwen3-coder-next` | Chat | `llama.cpp:4000` | GGUF |
+| `gpt-oss-120b` | Chat | `llama.cpp:4000` | GGUF |
+| `qwen-small` | Chat | `llama.cpp:4000` | GGUF |
+| `gpt-5` | Chat | Cloud OpenAI-compatible provider | No local download |
+| `qwen-image` | Image | `ComfyUI:8188` through `image-adapter:4010` | ComfyUI model components |
+| `flux-dev` | Image | `ComfyUI:8188` through `image-adapter:4010` | ComfyUI model components |
+| `HunyuanVideo-1.5` | Video | `ComfyUI:8188` through `video-adapter:4020` | ComfyUI model components |
+| `Wan2.2-TI2V-5B` | Video | `ComfyUI:8188` through `video-adapter:4020` | ComfyUI model components |
+
+Recommended video model choices:
+
+- `HunyuanVideo-1.5`: highest overall generation quality.
+- `Wan2.2-TI2V-5B`: stable, mature, and ecosystem-friendly.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    A1[Open WebUI]
+    A2[ZCode]
+    A3[tenx-ai-webui]
+
+    G[tenx-ai-gateway<br/>Unified entry / API key auth / routing / forwarding]
+
+    T[llama.cpp:4000<br/>Chat models]
+    IA[image-adapter:4010<br/>Image adapter]
+    VA[video-adapter:4020<br/>Video adapter]
+
+    C[ComfyUI:8188<br/>Image and video workflows]
+    S[Windows document center<br/>Generated file storage]
+
+    A1 --> G
+    A2 --> G
+    A3 --> G
+
+    G --> T
+    G --> IA
+    G --> VA
+
+    IA --> C
+    VA --> C
+
+    C --> S
+```
+
+In this architecture, Open WebUI, ZCode, and `tenx-ai-webui` all call the Gateway through an OpenAI-compatible `/v1` base URL. The Gateway routes chat requests to `llama.cpp`, routes image requests to `image-adapter`, routes video requests to `video-adapter`, and returns document center URLs for generated image and video results.
+
 ## What V1 Supports
 
 - `POST /v1/chat/completions`
