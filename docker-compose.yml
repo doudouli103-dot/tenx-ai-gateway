@@ -18,7 +18,5 @@ services:
       TENX_VIDEO_OPENAI_API_KEY: ${TENX_VIDEO_OPENAI_API_KEY:-}
       TENX_CLOUD_OPENAI_BASE_URL: ${TENX_CLOUD_OPENAI_BASE_URL:-https://api.openai.com}
       TENX_CLOUD_OPENAI_API_KEY: ${TENX_CLOUD_OPENAI_API_KEY:-}
-      TENX_DOCUMENT_CENTER_BASE_URL: ${TENX_DOCUMENT_CENTER_BASE_URL:-http://host.docker.internal:8081}
-      TENX_DOCUMENT_CENTER_UPLOAD_PATH: ${TENX_DOCUMENT_CENTER_UPLOAD_PATH:-/api/files}
     extra_hosts:
       - "host.docker.internal:host-gateway"

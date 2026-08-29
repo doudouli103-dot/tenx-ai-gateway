@@ -12,7 +12,6 @@ public class GatewayProperties {
     private List<String> apiKeys = new ArrayList<String>();
     private Map<String, ProviderConfig> providers = new LinkedHashMap<String, ProviderConfig>();
     private Map<String, RouteConfig> routes = new LinkedHashMap<String, RouteConfig>();
-    private DocumentCenterConfig documentCenter = new DocumentCenterConfig();
 
     public List<String> getApiKeys() {
         return apiKeys;
@@ -36,14 +35,6 @@ public class GatewayProperties {
 
     public void setRoutes(Map<String, RouteConfig> routes) {
         this.routes = routes;
-    }
-
-    public DocumentCenterConfig getDocumentCenter() {
-        return documentCenter;
-    }
-
-    public void setDocumentCenter(DocumentCenterConfig documentCenter) {
-        this.documentCenter = documentCenter;
     }
 
     public static class ProviderConfig {
@@ -142,24 +133,4 @@ public class GatewayProperties {
         }
     }
 
-    public static class DocumentCenterConfig {
-        private String baseUrl;
-        private String uploadPath = "/api/files";
-
-        public String getBaseUrl() {
-            return baseUrl;
-        }
-
-        public void setBaseUrl(String baseUrl) {
-            this.baseUrl = baseUrl;
-        }
-
-        public String getUploadPath() {
-            return uploadPath;
-        }
-
-        public void setUploadPath(String uploadPath) {
-            this.uploadPath = uploadPath;
-        }
-    }
 }
