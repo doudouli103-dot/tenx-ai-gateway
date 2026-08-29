@@ -13,7 +13,7 @@ Runtime ownership is split by model type:
 - Chat models run behind `llama.cpp` or another OpenAI-compatible text inference service.
 - Image models run behind `ComfyUI` through `image-adapter`.
 - Video models run behind `ComfyUI` through `video-adapter`.
-- Generated image and video files are handled by `tenx-ai-media-service`, which uploads them to the document center for WebUI clients.
+- Generated image and video files are handled by `tenx-ai-media-service`, which stores them under its own local media storage and returns downloadable asset URLs for WebUI clients.
 
 Recommended model placement:
 
@@ -49,7 +49,7 @@ flowchart TD
     VA[video-adapter:4020<br/>Video adapter]
 
     C[ComfyUI:8188<br/>Image and video workflows]
-    S[Windows document center<br/>Generated file storage]
+    S[tenx-ai-media-service storage<br/>Generated file storage]
 
     A1 --> G
     A2 --> G
@@ -66,7 +66,7 @@ flowchart TD
     A3 --> S
 ```
 
-In this architecture, Open WebUI and ZCode call the Gateway through an OpenAI-compatible `/v1` base URL. `tenx-ai-webui` calls `tenx-ai-media-service`, and the media service calls the Gateway plus the document center. The Gateway routes chat requests to `llama.cpp`, routes image requests to `image-adapter`, and routes video requests to `video-adapter`.
+In this architecture, Open WebUI and ZCode call the Gateway through an OpenAI-compatible `/v1` base URL. `tenx-ai-webui` calls `tenx-ai-media-service`, and the media service calls the Gateway plus its own local media storage. The Gateway routes chat requests to `llama.cpp`, routes image requests to `image-adapter`, and routes video requests to `video-adapter`.
 
 ## What V1 Supports
 
@@ -155,7 +155,7 @@ routes:
 
 Any backend that exposes an OpenAI-compatible `/v1/chat/completions` endpoint can be placed behind this Gateway, including LiteLLM, vLLM, LM Studio, Ollama-compatible proxy services, or cloud providers.
 
-For image and video generation, `tenx-ai-gateway` returns the provider response as-is. Use `tenx-ai-media-service` when a client needs generated files uploaded to the document center.
+For image and video generation, `tenx-ai-gateway` returns the provider response as-is. Use `tenx-ai-media-service` when a client needs generated files saved and exposed as downloadable asset URLs.
 
 ## Start
 
@@ -841,7 +841,7 @@ The Gateway returns the provider response as-is:
 }
 ```
 
-Use `tenx-ai-media-service` for asynchronous WebUI video tasks and document center upload.
+Use `tenx-ai-media-service` for asynchronous WebUI video tasks, local media storage, and downloadable asset URLs.
 
 ## Use With Open WebUI Docker
 
