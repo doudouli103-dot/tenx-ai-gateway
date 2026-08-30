@@ -13,7 +13,6 @@ Runtime ownership is split by model type:
 - Chat models run behind `llama.cpp` or another OpenAI-compatible text inference service.
 - Image models run behind `ComfyUI` through `image-adapter`.
 - Video models run behind `ComfyUI` through `video-adapter`.
-- Speech models run behind `CosyVoice` through `tts-adapter`.
 - Generated image and video files are handled by `tenx-ai-media-service`, which stores them under its own local media storage and returns downloadable asset URLs for WebUI clients.
 
 Recommended model placement:
@@ -28,7 +27,6 @@ Recommended model placement:
 | `flux-dev` | Image | `ComfyUI:8188` through `image-adapter:4010` | ComfyUI model components |
 | `HunyuanVideo-1.5` | Video | `ComfyUI:8188` through `video-adapter:4020` | ComfyUI model components |
 | `Wan2.2-TI2V-5B` | Video | `ComfyUI:8188` through `video-adapter:4020` | ComfyUI model components |
-| `cosyvoice` | Speech | `CosyVoice` through `tts-adapter:4030` | CosyVoice model components |
 
 Recommended video model choices:
 
@@ -49,8 +47,6 @@ flowchart TD
     T[llama.cpp:4000<br/>Chat models]
     IA[image-adapter:4010<br/>Image adapter]
     VA[video-adapter:4020<br/>Video adapter]
-    TA[tts-adapter:4030<br/>CosyVoice adapter]
-
     C[ComfyUI:8188<br/>Image and video workflows]
     S[tenx-ai-media-service storage<br/>Generated file storage]
 
@@ -62,7 +58,6 @@ flowchart TD
     G --> T
     G --> IA
     G --> VA
-    G --> TA
 
     IA --> C
     VA --> C
@@ -80,7 +75,7 @@ Inbound callers:
 
 | Caller | Calls Gateway for | Gateway endpoint |
 | --- | --- | --- |
-| `video-agent` | Script generation and CosyVoice speech | `/v1/chat/completions`, `/v1/audio/speech` |
+| `video-agent` | Script generation | `/v1/chat/completions` |
 | `tenx-ai-media-service` | Image and video generation | `/v1/images/generations`, `/v1/videos/generations` |
 | `tenx-ai-webui` or third-party clients | Direct model access when needed | `/v1/*` |
 | Open WebUI / ZCode | Chat model access | `/v1/chat/completions`, `/v1/models` |
@@ -93,7 +88,6 @@ Outbound dependencies:
 | Cloud chat | `gpt-5` | `TENX_CLOUD_OPENAI_BASE_URL` | None |
 | Image | `qwen-image`, `flux-dev` | `TENX_IMAGE_OPENAI_BASE_URL` such as `image-adapter:4010` | `tenx-ai-media-service` |
 | Video | `Wan2.2-TI2V-5B`, `HunyuanVideo-1.5` | `TENX_VIDEO_OPENAI_BASE_URL` such as `video-adapter:4020` | `tenx-ai-media-service` |
-| Speech | `cosyvoice` | `TENX_SPEECH_OPENAI_BASE_URL` such as `tenx-ai-tts-adapter:4030` | Caller, usually `video-agent` |
 
 End-to-end chains:
 
@@ -120,19 +114,11 @@ video-agent-webui
               -> video-adapter
                   -> ComfyUI / Wan runtime
           -> tenx-ai-media-service storage/media
-
-Speech:
-video-agent
-  -> tenx-ai-gateway /v1/audio/speech
-      -> tenx-ai-tts-adapter /v1/audio/speech
-          -> CosyVoice
-  -> video-agent storage/projects/<project_id>/audio/voice.wav
 ```
 
 ## What V1 Supports
 
 - `POST /v1/chat/completions`
-- `POST /v1/audio/speech`
 - `POST /v1/images/generations`
 - `POST /v1/videos/generations`
 - `GET /v1/models`
@@ -167,8 +153,6 @@ export TENX_IMAGE_OPENAI_BASE_URL=http://127.0.0.1:4010
 export TENX_IMAGE_OPENAI_API_KEY=
 export TENX_VIDEO_OPENAI_BASE_URL=http://127.0.0.1:4020
 export TENX_VIDEO_OPENAI_API_KEY=
-export TENX_SPEECH_OPENAI_BASE_URL=http://127.0.0.1:4030
-export TENX_SPEECH_OPENAI_API_KEY=
 export TENX_CLOUD_OPENAI_BASE_URL=https://api.openai.com
 export TENX_CLOUD_OPENAI_API_KEY=your-cloud-key
 ```
@@ -215,17 +199,11 @@ routes:
     model: Wan2.2-TI2V-5B
     default-duration-seconds: 5
     max-duration-seconds: 5
-  cosyvoice:
-    capability: speech
-    provider: speech-compatible
-    model: cosyvoice
 ```
 
 Any backend that exposes an OpenAI-compatible `/v1/chat/completions` endpoint can be placed behind this Gateway, including LiteLLM, vLLM, LM Studio, Ollama-compatible proxy services, or cloud providers.
 
 For image and video generation, `tenx-ai-gateway` returns the provider response as-is. Use `tenx-ai-media-service` when a client needs generated files saved and exposed as downloadable asset URLs.
-
-For speech generation, `tenx-ai-gateway` forwards OpenAI-compatible `POST /v1/audio/speech` requests to `tts-adapter`, which should wrap CosyVoice and return audio bytes such as `audio/wav`.
 
 ## Start
 
@@ -292,7 +270,6 @@ TENX_AI_GATEWAY_API_KEYS: local-dev-key
 TENX_LOCAL_OPENAI_BASE_URL: http://host.docker.internal:4000
 TENX_IMAGE_OPENAI_BASE_URL: http://host.docker.internal:4010
 TENX_VIDEO_OPENAI_BASE_URL: http://host.docker.internal:4020
-TENX_SPEECH_OPENAI_BASE_URL: http://host.docker.internal:4030
 TENX_CLOUD_OPENAI_BASE_URL: https://api.openai.com
 ```
 
@@ -318,8 +295,6 @@ TENX_IMAGE_OPENAI_BASE_URL=http://host.docker.internal:4010
 TENX_IMAGE_OPENAI_API_KEY=
 TENX_VIDEO_OPENAI_BASE_URL=http://host.docker.internal:4020
 TENX_VIDEO_OPENAI_API_KEY=
-TENX_SPEECH_OPENAI_BASE_URL=http://host.docker.internal:4030
-TENX_SPEECH_OPENAI_API_KEY=
 TENX_CLOUD_OPENAI_BASE_URL=https://api.openai.com
 TENX_CLOUD_OPENAI_API_KEY=
 ```
