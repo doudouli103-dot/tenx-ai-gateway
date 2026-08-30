@@ -18,6 +18,10 @@ tenx:
           type: openai-video-compatible
           base-url: ${TENX_VIDEO_OPENAI_BASE_URL:http://127.0.0.1:4020}
           api-key: ${TENX_VIDEO_OPENAI_API_KEY:}
+        speech-compatible:
+          type: openai-audio-compatible
+          base-url: ${TENX_SPEECH_OPENAI_BASE_URL:http://127.0.0.1:4030}
+          api-key: ${TENX_SPEECH_OPENAI_API_KEY:}
         cloud-openai:
           type: openai-compatible
           base-url: ${TENX_CLOUD_OPENAI_BASE_URL:https://api.openai.com}
@@ -61,3 +65,7 @@ tenx:
           model: Wan2.2-TI2V-5B
           default-duration-seconds: 5
           max-duration-seconds: 5
+        cosyvoice:
+          capability: speech
+          provider: speech-compatible
+          model: cosyvoice
