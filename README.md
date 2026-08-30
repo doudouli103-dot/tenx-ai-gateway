@@ -8,6 +8,15 @@ This version focuses on model onboarding, model download guides, deployment note
 
 `tenx-ai-gateway` does not start model runtimes, manage model weights, or upload generated files. It stays at the gateway layer: unified entry point, API key authentication, model routing, request forwarding, and fallback routing.
 
+Boundary rule:
+
+```text
+tenx-ai-gateway only routes model calls.
+It does not call tenx-ai-tts-adapter.
+It does not call study-ai-document-center-backend.
+It does not generate final.mp4 or store media assets.
+```
+
 Runtime ownership is split by model type:
 
 - Chat models run behind `llama.cpp` or another OpenAI-compatible text inference service.
@@ -66,6 +75,8 @@ flowchart TD
 ```
 
 In this architecture, Open WebUI and ZCode call the Gateway through an OpenAI-compatible `/v1` base URL. `tenx-ai-webui` calls `tenx-ai-media-service`, and the media service calls the Gateway plus its own local media storage. The Gateway routes chat requests to `llama.cpp`, routes image requests to `image-adapter`, and routes video requests to `video-adapter`.
+
+Speech/TTS is intentionally outside this Gateway. `video-agent` calls `tenx-ai-tts-adapter` directly for CosyVoice narration.
 
 ## Calling Chains
 
@@ -204,6 +215,8 @@ routes:
 Any backend that exposes an OpenAI-compatible `/v1/chat/completions` endpoint can be placed behind this Gateway, including LiteLLM, vLLM, LM Studio, Ollama-compatible proxy services, or cloud providers.
 
 For image and video generation, `tenx-ai-gateway` returns the provider response as-is. Use `tenx-ai-media-service` when a client needs generated files saved and exposed as downloadable asset URLs.
+
+For speech generation, do not add a Gateway route. Use `video-agent -> tenx-ai-tts-adapter -> CosyVoice` so the Gateway stays independent from the TTS service.
 
 ## Start
 
