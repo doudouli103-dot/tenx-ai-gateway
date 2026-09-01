@@ -677,7 +677,7 @@ python main.py --listen 0.0.0.0 --port 8188
 Open ComfyUI:
 
 ```text
-http://<Mac-Studio-IP>:8188
+http://macstudio.tentest.cn:8188
 ```
 
 After downloading the image and video models, load the matching workflow template in ComfyUI and run it once manually. Then connect it to the Gateway through `image-adapter` and `video-adapter`.
@@ -911,7 +911,7 @@ python main.py --listen 0.0.0.0 --port 8188
 Open ComfyUI:
 
 ```text
-http://<Mac-Studio-IP>:8188
+http://macstudio.tentest.cn:8188
 ```
 
 Then load the matching workflow template for `qwen-image`, `flux-dev`, `HunyuanVideo-1.5`, or `Wan2.2-TI2V-5B`.
