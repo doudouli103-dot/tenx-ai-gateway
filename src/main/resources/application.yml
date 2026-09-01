@@ -5,6 +5,17 @@ tenx:
   ai:
     gateway:
       api-keys: ${TENX_AI_GATEWAY_API_KEYS:local-dev-key}
+      admin:
+        command-timeout-millis: ${TENX_AI_GATEWAY_ADMIN_COMMAND_TIMEOUT_MILLIS:60000}
+        cors-allowed-origins: ${TENX_AI_GATEWAY_ADMIN_CORS_ALLOWED_ORIGINS:http://127.0.0.1:5173,http://localhost:5173}
+      http:
+        max-connections: ${TENX_AI_GATEWAY_HTTP_MAX_CONNECTIONS:200}
+        pending-acquire-timeout-millis: ${TENX_AI_GATEWAY_HTTP_PENDING_ACQUIRE_TIMEOUT_MILLIS:30000}
+        connect-timeout-millis: ${TENX_AI_GATEWAY_HTTP_CONNECT_TIMEOUT_MILLIS:5000}
+        response-timeout-millis: ${TENX_AI_GATEWAY_HTTP_RESPONSE_TIMEOUT_MILLIS:120000}
+        read-timeout-millis: ${TENX_AI_GATEWAY_HTTP_READ_TIMEOUT_MILLIS:120000}
+        write-timeout-millis: ${TENX_AI_GATEWAY_HTTP_WRITE_TIMEOUT_MILLIS:120000}
+        max-in-memory-size-bytes: ${TENX_AI_GATEWAY_HTTP_MAX_IN_MEMORY_SIZE_BYTES:2097152}
       providers:
         local-compatible:
           type: openai-compatible
@@ -61,3 +72,39 @@ tenx:
           model: Wan2.2-TI2V-5B
           default-duration-seconds: 5
           max-duration-seconds: 5
+      runtimes:
+        qwen-small:
+          health-url: ${TENX_RUNTIME_QWEN_SMALL_HEALTH_URL:http://127.0.0.1:4000/health}
+          start-command: ${TENX_RUNTIME_QWEN_SMALL_START_COMMAND:/Users/lijunwei/ai-scripts/start-qwen-small.sh}
+          stop-command: ${TENX_RUNTIME_QWEN_SMALL_STOP_COMMAND:/Users/lijunwei/ai-scripts/stop-chat-model.sh}
+          resource-check-command: ${TENX_RUNTIME_QWEN_SMALL_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep llama-server | grep -v grep || true}
+        qwen3-coder-next:
+          health-url: ${TENX_RUNTIME_QWEN3_CODER_NEXT_HEALTH_URL:http://127.0.0.1:4000/health}
+          start-command: ${TENX_RUNTIME_QWEN3_CODER_NEXT_START_COMMAND:/Users/lijunwei/ai-scripts/start-qwen3-coder-next.sh}
+          stop-command: ${TENX_RUNTIME_QWEN3_CODER_NEXT_STOP_COMMAND:/Users/lijunwei/ai-scripts/stop-chat-model.sh}
+          resource-check-command: ${TENX_RUNTIME_QWEN3_CODER_NEXT_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep llama-server | grep -v grep || true}
+        gpt-oss-120b:
+          health-url: ${TENX_RUNTIME_GPT_OSS_120B_HEALTH_URL:http://127.0.0.1:4000/health}
+          start-command: ${TENX_RUNTIME_GPT_OSS_120B_START_COMMAND:/Users/lijunwei/ai-scripts/start-gpt-oss-120b.sh}
+          stop-command: ${TENX_RUNTIME_GPT_OSS_120B_STOP_COMMAND:/Users/lijunwei/ai-scripts/stop-chat-model.sh}
+          resource-check-command: ${TENX_RUNTIME_GPT_OSS_120B_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep llama-server | grep -v grep || true}
+        qwen-image:
+          health-url: ${TENX_RUNTIME_QWEN_IMAGE_HEALTH_URL:http://127.0.0.1:4010/health}
+          start-command: ${TENX_RUNTIME_QWEN_IMAGE_START_COMMAND:/Users/lijunwei/ai-scripts/start-qwen-image.sh}
+          stop-command: ${TENX_RUNTIME_QWEN_IMAGE_STOP_COMMAND:/Users/lijunwei/ai-scripts/stop-image-model.sh}
+          resource-check-command: ${TENX_RUNTIME_QWEN_IMAGE_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep -E 'ComfyUI|image-adapter' | grep -v grep || true}
+        flux-dev:
+          health-url: ${TENX_RUNTIME_FLUX_DEV_HEALTH_URL:http://127.0.0.1:4010/health}
+          start-command: ${TENX_RUNTIME_FLUX_DEV_START_COMMAND:/Users/lijunwei/ai-scripts/start-flux-dev.sh}
+          stop-command: ${TENX_RUNTIME_FLUX_DEV_STOP_COMMAND:/Users/lijunwei/ai-scripts/stop-image-model.sh}
+          resource-check-command: ${TENX_RUNTIME_FLUX_DEV_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep -E 'ComfyUI|image-adapter' | grep -v grep || true}
+        "[HunyuanVideo-1.5]":
+          health-url: ${TENX_RUNTIME_HUNYUANVIDEO_1_5_HEALTH_URL:http://127.0.0.1:4020/health}
+          start-command: ${TENX_RUNTIME_HUNYUANVIDEO_1_5_START_COMMAND:/Users/lijunwei/ai-scripts/start-hunyuanvideo-1.5.sh}
+          stop-command: ${TENX_RUNTIME_HUNYUANVIDEO_1_5_STOP_COMMAND:/Users/lijunwei/ai-scripts/stop-video-model.sh}
+          resource-check-command: ${TENX_RUNTIME_HUNYUANVIDEO_1_5_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep -E 'ComfyUI|video-adapter' | grep -v grep || true}
+        "[Wan2.2-TI2V-5B]":
+          health-url: ${TENX_RUNTIME_WAN2_2_TI2V_5B_HEALTH_URL:http://127.0.0.1:4020/health}
+          start-command: ${TENX_RUNTIME_WAN2_2_TI2V_5B_START_COMMAND:/Users/lijunwei/ai-scripts/start-wan2.2-ti2v-5b.sh}
+          stop-command: ${TENX_RUNTIME_WAN2_2_TI2V_5B_STOP_COMMAND:/Users/lijunwei/ai-scripts/stop-video-model.sh}
+          resource-check-command: ${TENX_RUNTIME_WAN2_2_TI2V_5B_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep -E 'ComfyUI|video-adapter' | grep -v grep || true}

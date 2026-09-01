@@ -1,13 +1,16 @@
 package com.tenx.ai.gateway;
 
 import com.tenx.ai.gateway.api.VideoController;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.tenx.ai.gateway.config.GatewayProperties;
 import com.tenx.ai.gateway.model.VideoGenerationRequest;
+import com.tenx.ai.gateway.provider.VideoProvider;
 import com.tenx.ai.gateway.provider.VideoProviderRegistry;
 import com.tenx.ai.gateway.routing.ModelRouter;
-import java.util.Collections;
+import java.util.Arrays;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
 
 public class VideoControllerTest {
 
@@ -15,7 +18,7 @@ public class VideoControllerTest {
     public void rejectsDurationGreaterThanConfiguredMax() {
         VideoController controller = new VideoController(
                 new ModelRouter(sampleProperties()),
-                new VideoProviderRegistry(Collections.emptyList())
+                new VideoProviderRegistry(Arrays.asList(new StubVideoProvider()))
         );
 
         VideoGenerationRequest request = new VideoGenerationRequest();
@@ -47,5 +50,17 @@ public class VideoControllerTest {
         properties.getRoutes().put("Wan2.2-TI2V-5B", route);
 
         return properties;
+    }
+
+    private static class StubVideoProvider implements VideoProvider {
+        @Override
+        public boolean supports(String providerType) {
+            return "openai-video-compatible".equals(providerType);
+        }
+
+        @Override
+        public Mono<JsonNode> generate(VideoGenerationRequest request, GatewayProperties.ProviderConfig provider) {
+            return Mono.empty();
+        }
     }
 }

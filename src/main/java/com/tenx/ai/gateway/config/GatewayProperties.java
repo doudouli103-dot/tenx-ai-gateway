@@ -10,8 +10,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class GatewayProperties {
 
     private List<String> apiKeys = new ArrayList<String>();
+    private AdminConfig admin = new AdminConfig();
+    private HttpConfig http = new HttpConfig();
     private Map<String, ProviderConfig> providers = new LinkedHashMap<String, ProviderConfig>();
     private Map<String, RouteConfig> routes = new LinkedHashMap<String, RouteConfig>();
+    private Map<String, RuntimeConfig> runtimes = new LinkedHashMap<String, RuntimeConfig>();
 
     public List<String> getApiKeys() {
         return apiKeys;
@@ -19,6 +22,22 @@ public class GatewayProperties {
 
     public void setApiKeys(List<String> apiKeys) {
         this.apiKeys = apiKeys;
+    }
+
+    public AdminConfig getAdmin() {
+        return admin;
+    }
+
+    public void setAdmin(AdminConfig admin) {
+        this.admin = admin;
+    }
+
+    public HttpConfig getHttp() {
+        return http;
+    }
+
+    public void setHttp(HttpConfig http) {
+        this.http = http;
     }
 
     public Map<String, ProviderConfig> getProviders() {
@@ -35,6 +54,49 @@ public class GatewayProperties {
 
     public void setRoutes(Map<String, RouteConfig> routes) {
         this.routes = routes;
+    }
+
+    public Map<String, RuntimeConfig> getRuntimes() {
+        return runtimes;
+    }
+
+    public void setRuntimes(Map<String, RuntimeConfig> runtimes) {
+        this.runtimes = runtimes;
+    }
+
+    public static class AdminConfig {
+        private boolean enabled = true;
+        private long commandTimeoutMillis = 60000;
+        private List<String> corsAllowedOrigins = new ArrayList<String>();
+
+        public AdminConfig() {
+            corsAllowedOrigins.add("http://127.0.0.1:5173");
+            corsAllowedOrigins.add("http://localhost:5173");
+        }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public long getCommandTimeoutMillis() {
+            return commandTimeoutMillis;
+        }
+
+        public void setCommandTimeoutMillis(long commandTimeoutMillis) {
+            this.commandTimeoutMillis = commandTimeoutMillis;
+        }
+
+        public List<String> getCorsAllowedOrigins() {
+            return corsAllowedOrigins;
+        }
+
+        public void setCorsAllowedOrigins(List<String> corsAllowedOrigins) {
+            this.corsAllowedOrigins = corsAllowedOrigins;
+        }
     }
 
     public static class ProviderConfig {
@@ -64,6 +126,72 @@ public class GatewayProperties {
 
         public void setApiKey(String apiKey) {
             this.apiKey = apiKey;
+        }
+    }
+
+    public static class HttpConfig {
+        private int maxConnections = 200;
+        private long pendingAcquireTimeoutMillis = 30000;
+        private int connectTimeoutMillis = 5000;
+        private long responseTimeoutMillis = 120000;
+        private long readTimeoutMillis = 120000;
+        private long writeTimeoutMillis = 120000;
+        private int maxInMemorySizeBytes = 2097152;
+
+        public int getMaxConnections() {
+            return maxConnections;
+        }
+
+        public void setMaxConnections(int maxConnections) {
+            this.maxConnections = maxConnections;
+        }
+
+        public long getPendingAcquireTimeoutMillis() {
+            return pendingAcquireTimeoutMillis;
+        }
+
+        public void setPendingAcquireTimeoutMillis(long pendingAcquireTimeoutMillis) {
+            this.pendingAcquireTimeoutMillis = pendingAcquireTimeoutMillis;
+        }
+
+        public int getConnectTimeoutMillis() {
+            return connectTimeoutMillis;
+        }
+
+        public void setConnectTimeoutMillis(int connectTimeoutMillis) {
+            this.connectTimeoutMillis = connectTimeoutMillis;
+        }
+
+        public long getResponseTimeoutMillis() {
+            return responseTimeoutMillis;
+        }
+
+        public void setResponseTimeoutMillis(long responseTimeoutMillis) {
+            this.responseTimeoutMillis = responseTimeoutMillis;
+        }
+
+        public long getReadTimeoutMillis() {
+            return readTimeoutMillis;
+        }
+
+        public void setReadTimeoutMillis(long readTimeoutMillis) {
+            this.readTimeoutMillis = readTimeoutMillis;
+        }
+
+        public long getWriteTimeoutMillis() {
+            return writeTimeoutMillis;
+        }
+
+        public void setWriteTimeoutMillis(long writeTimeoutMillis) {
+            this.writeTimeoutMillis = writeTimeoutMillis;
+        }
+
+        public int getMaxInMemorySizeBytes() {
+            return maxInMemorySizeBytes;
+        }
+
+        public void setMaxInMemorySizeBytes(int maxInMemorySizeBytes) {
+            this.maxInMemorySizeBytes = maxInMemorySizeBytes;
         }
     }
 
@@ -130,6 +258,45 @@ public class GatewayProperties {
 
         public void setMaxDurationSeconds(Integer maxDurationSeconds) {
             this.maxDurationSeconds = maxDurationSeconds;
+        }
+    }
+
+    public static class RuntimeConfig {
+        private String healthUrl;
+        private String startCommand;
+        private String stopCommand;
+        private String resourceCheckCommand;
+
+        public String getHealthUrl() {
+            return healthUrl;
+        }
+
+        public void setHealthUrl(String healthUrl) {
+            this.healthUrl = healthUrl;
+        }
+
+        public String getStartCommand() {
+            return startCommand;
+        }
+
+        public void setStartCommand(String startCommand) {
+            this.startCommand = startCommand;
+        }
+
+        public String getStopCommand() {
+            return stopCommand;
+        }
+
+        public void setStopCommand(String stopCommand) {
+            this.stopCommand = stopCommand;
+        }
+
+        public String getResourceCheckCommand() {
+            return resourceCheckCommand;
+        }
+
+        public void setResourceCheckCommand(String resourceCheckCommand) {
+            this.resourceCheckCommand = resourceCheckCommand;
         }
     }
 

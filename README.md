@@ -133,6 +133,9 @@ video-agent-webui
 - `POST /v1/images/generations`
 - `POST /v1/videos/generations`
 - `GET /v1/models`
+- `GET /admin/models`
+- `POST /admin/models/{model}/start`
+- `POST /admin/models/{model}/stop`
 - `GET /healthz`
 - OpenAI-compatible chat request forwarding
 - OpenAI-compatible image generation forwarding
@@ -142,6 +145,7 @@ video-agent-webui
 - One-level fallback for non-streaming and streaming calls
 - API Key authentication with `Authorization: Bearer <key>`
 - Streaming forwarding when request body contains `"stream": true`
+- Manual model runtime status, start, and stop through configured admin commands
 
 ## Runtime
 
@@ -166,6 +170,8 @@ export TENX_VIDEO_OPENAI_BASE_URL=http://127.0.0.1:4020
 export TENX_VIDEO_OPENAI_API_KEY=
 export TENX_CLOUD_OPENAI_BASE_URL=https://api.openai.com
 export TENX_CLOUD_OPENAI_API_KEY=your-cloud-key
+export TENX_AI_GATEWAY_ADMIN_COMMAND_TIMEOUT_MILLIS=60000
+export TENX_AI_GATEWAY_ADMIN_CORS_ALLOWED_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
 ```
 
 Default model routes:
@@ -217,6 +223,72 @@ Any backend that exposes an OpenAI-compatible `/v1/chat/completions` endpoint ca
 For image and video generation, `tenx-ai-gateway` returns the provider response as-is. Use `tenx-ai-media-service` when a client needs generated files saved and exposed as downloadable asset URLs.
 
 For speech generation, do not add a Gateway route. Use `video-agent -> tenx-ai-tts-adapter -> CosyVoice` so the Gateway stays independent from the TTS service.
+
+## Admin Runtime Control
+
+The Gateway can expose model runtime status and manually execute configured start/stop commands for each model.
+
+Admin endpoints use the same API key authentication as `/v1`:
+
+```bash
+curl http://127.0.0.1:8088/admin/models \
+  -H "Authorization: Bearer local-dev-key"
+```
+
+Start a configured model runtime:
+
+```bash
+curl -X POST http://127.0.0.1:8088/admin/models/qwen-small/start \
+  -H "Authorization: Bearer local-dev-key"
+```
+
+Stop a configured model runtime:
+
+```bash
+curl -X POST http://127.0.0.1:8088/admin/models/qwen-small/stop \
+  -H "Authorization: Bearer local-dev-key"
+```
+
+Runtime config example:
+
+```yaml
+tenx:
+  ai:
+    gateway:
+      runtimes:
+        qwen-small:
+          health-url: http://127.0.0.1:4000/health
+          start-command: /Users/lijunwei/ai-scripts/start-qwen-small.sh
+          stop-command: /Users/lijunwei/ai-scripts/stop-chat-model.sh
+          resource-check-command: ps -axo pid,rss,command | grep llama-server | grep -v grep || true
+```
+
+The Gateway only executes configured commands. It does not accept command text from the frontend, download model weights, or manage ComfyUI workflow internals.
+
+Start and stop responses include command output plus status verification:
+
+```json
+{
+  "model": "qwen-small",
+  "action": "stop",
+  "success": true,
+  "statusBefore": "online",
+  "statusAfter": "offline",
+  "expectedStatus": "offline",
+  "statusVerified": true,
+  "command": {
+    "success": true,
+    "message": "Command executed",
+    "exitCode": 0,
+    "output": "llama-server stopped\n"
+  },
+  "resourceCheckOutput": ""
+}
+```
+
+For stop operations, `success=true` means the stop command exited successfully and `health-url` became `offline`. `resource-check-command` is optional; use it to show whether model processes still exist and how much RSS memory they hold after the operation.
+
+If the Gateway runs in Docker, these commands run inside the container. To control Mac Studio host processes, run the Gateway directly on the Mac host, or mount the scripts and model runtime paths into the container.
 
 ## Start
 

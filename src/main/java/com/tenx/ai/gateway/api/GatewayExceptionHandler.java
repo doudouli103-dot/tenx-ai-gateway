@@ -18,4 +18,9 @@ public class GatewayExceptionHandler {
     public Mono<ResponseEntity<String>> illegalArgument(IllegalArgumentException exception) {
         return Mono.just(ResponseEntity.badRequest().body(exception.getMessage()));
     }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public Mono<ResponseEntity<String>> illegalState(IllegalStateException exception) {
+        return Mono.just(ResponseEntity.badRequest().body(exception.getMessage()));
+    }
 }

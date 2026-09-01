@@ -22,4 +22,12 @@ public class GatewayPropertiesBindingTest {
         Assertions.assertEquals("video", properties.getRoutes().get("Wan2.2-TI2V-5B").getCapability());
         Assertions.assertEquals(Integer.valueOf(5), properties.getRoutes().get("Wan2.2-TI2V-5B").getDefaultDurationSeconds());
     }
+
+    @Test
+    public void bindsHttpClientTuningDefaults() {
+        Assertions.assertEquals(200, properties.getHttp().getMaxConnections());
+        Assertions.assertEquals(5000, properties.getHttp().getConnectTimeoutMillis());
+        Assertions.assertEquals(120000, properties.getHttp().getResponseTimeoutMillis());
+        Assertions.assertEquals(2097152, properties.getHttp().getMaxInMemorySizeBytes());
+    }
 }

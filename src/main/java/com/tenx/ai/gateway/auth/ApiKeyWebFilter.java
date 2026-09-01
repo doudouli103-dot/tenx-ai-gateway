@@ -4,6 +4,7 @@ import com.tenx.ai.gateway.config.GatewayProperties;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -23,7 +24,9 @@ public class ApiKeyWebFilter implements WebFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
-        if (path.startsWith("/actuator") || "/healthz".equals(path)) {
+        if (HttpMethod.OPTIONS.equals(exchange.getRequest().getMethod())
+                || path.startsWith("/actuator")
+                || "/healthz".equals(path)) {
             return chain.filter(exchange);
         }
 
