@@ -171,7 +171,45 @@ export TENX_VIDEO_OPENAI_API_KEY=
 export TENX_CLOUD_OPENAI_BASE_URL=https://api.openai.com
 export TENX_CLOUD_OPENAI_API_KEY=your-cloud-key
 export TENX_AI_GATEWAY_ADMIN_COMMAND_TIMEOUT_MILLIS=60000
-export TENX_AI_GATEWAY_ADMIN_CORS_ALLOWED_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
+export TENX_AI_GATEWAY_ADMIN_CORS_ALLOWED_ORIGINS=http://127.0.0.1:5173,http://localhost:5173,http://macstudio.tentest.cn:5173,http://192.168.1.102:5173
+```
+
+## LAN Deployment Topology
+
+Use these host mappings on each machine that needs to call the services:
+
+```text
+192.168.1.101  macbook.tentest.cn
+192.168.1.102  macstudio.tentest.cn
+192.168.1.103  windows.tentest.cn
+```
+
+Recommended placement:
+
+| Machine | Projects | Ports |
+| --- | --- | --- |
+| Mac Studio | `tenx-ai-gateway-admin`, `tenx-ai-gateway`, `tenx-ai-tts-adapter` | `5173`, `8088`, `4030` |
+| Windows | `tenx-ai-media-service`, `tenx-ai-webui`, `video-agent`, `video-agent-webui` | `8092`, `5175`, `8090`, `5174` |
+
+Mac Studio service URLs:
+
+```text
+Gateway admin UI: http://macstudio.tentest.cn:5173
+Gateway API:      http://macstudio.tentest.cn:8088
+TTS Adapter API:  http://macstudio.tentest.cn:4030/v1
+```
+
+Windows services should call the Mac Studio Gateway and TTS Adapter by domain:
+
+```bash
+export AI_GATEWAY_BASE_URL=http://macstudio.tentest.cn:8088/v1
+export AI_GATEWAY_API_KEY=local-dev-key
+export TTS_ADAPTER_BASE_URL=http://macstudio.tentest.cn:4030/v1
+export TTS_ADAPTER_API_KEY=local-dev-key
+export TENX_AI_MEDIA_BASE_URL=http://windows.tentest.cn:8092/api/v1
+export TENX_AI_MEDIA_API_KEY=local-dev-key
+export TENX_AI_GATEWAY_BASE_URL=http://macstudio.tentest.cn:8088/v1
+export TENX_AI_MEDIA_PUBLIC_BASE_URL=http://windows.tentest.cn:8092
 ```
 
 Default model routes:

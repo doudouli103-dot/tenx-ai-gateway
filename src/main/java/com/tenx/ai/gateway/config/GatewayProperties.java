@@ -72,6 +72,8 @@ public class GatewayProperties {
         public AdminConfig() {
             corsAllowedOrigins.add("http://127.0.0.1:5173");
             corsAllowedOrigins.add("http://localhost:5173");
+            corsAllowedOrigins.add("http://macstudio.tentest.cn:5173");
+            corsAllowedOrigins.add("http://192.168.1.102:5173");
         }
 
         public boolean isEnabled() {
