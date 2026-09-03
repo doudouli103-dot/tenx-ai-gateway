@@ -9,15 +9,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * OpenAI 兼容的模型列表入口，处理 {@code GET /v1/models}。
+ * 返回配置中所有已注册的模型（key 作为模型 id，附带 capability）。
+ */
 @RestController
 public class ModelController {
 
+    /** 全局配置对象，提供已注册的路由模型。 */
     private final GatewayProperties properties;
 
+    /** 构造模型列表入口。 */
     public ModelController(GatewayProperties properties) {
         this.properties = properties;
     }
 
+    /** 返回所有已注册模型（id + capability）。 */
     @GetMapping("/v1/models")
     public ResponseEntity<Map<String, Object>> models() {
         List<Map<String, String>> data = new ArrayList<Map<String, String>>();

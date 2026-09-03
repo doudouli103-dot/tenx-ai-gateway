@@ -7,15 +7,24 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import org.springframework.stereotype.Component;
 
+/**
+ * 通过本机 shell 执行运行时命令（start/stop 脚本）的命令执行器。
+ *
+ * <p>使用配置的 shell（默认 /bin/sh，兼容容器）以 {@code -lc} 方式执行完整命令字符串。
+ * 执行有超时限制，超时后强制终止进程；命令输出截断到 8000 字符，避免撑爆响应。
+ */
 @Component
 public class ProcessModelRuntimeCommandRunner implements ModelRuntimeCommandRunner {
 
+    /** 执行命令用的 shell（由配置注入，默认 /bin/sh）。 */
     private final String commandShell;
 
+    /** 构造命令执行器，从配置读取 shell。 */
     public ProcessModelRuntimeCommandRunner(GatewayProperties properties) {
         this.commandShell = resolveShell(properties.getAdmin().getCommandShell());
     }
 
+    /** 未配置或为空时回落到 /bin/sh，保证容器等无 zsh 的环境也能执行。 */
     private static String resolveShell(String configuredShell) {
         if (configuredShell == null || configuredShell.trim().length() == 0) {
             return "/bin/sh";
@@ -23,6 +32,7 @@ public class ProcessModelRuntimeCommandRunner implements ModelRuntimeCommandRunn
         return configuredShell.trim();
     }
 
+    /** 执行命令，超时强制终止，返回执行结果。 */
     @Override
     public CommandResult run(String command, long timeoutMillis) {
         if (command == null || command.trim().length() == 0) {
@@ -51,6 +61,7 @@ public class ProcessModelRuntimeCommandRunner implements ModelRuntimeCommandRunn
         }
     }
 
+    /** 读取命令输出，最多保留 8000 字符（防止超长输出撑爆响应）。 */
     private String readOutput(Process process) throws Exception {
         StringBuilder output = new StringBuilder();
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));

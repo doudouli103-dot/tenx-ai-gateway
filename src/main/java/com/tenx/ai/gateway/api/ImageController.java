@@ -13,18 +13,29 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+/**
+ * OpenAI 兼容的图像生成入口，处理 {@code /v1/images/generations}。
+ *
+ * <p>流程：解析路由 → 校验 capability 为 image → 转发给对应 provider → 原样返回上游响应。
+ * 网关本身不生成图像，也不保存图像文件。
+ */
 @RestController
 public class ImageController {
 
+    /** 路由解析器，把请求模型名解析成路由。 */
     private final ModelRouter modelRouter;
+
+    /** 图像 provider 注册表，按类型取 provider 实现。 */
     private final ImageProviderRegistry imageProviderRegistry;
 
+    /** 构造图像生成入口。 */
     public ImageController(ModelRouter modelRouter,
                            ImageProviderRegistry imageProviderRegistry) {
         this.modelRouter = modelRouter;
         this.imageProviderRegistry = imageProviderRegistry;
     }
 
+    /** 图像生成入口：解析路由、校验能力，转发给对应 provider 并原样返回。 */
     @PostMapping("/v1/images/generations")
     public Mono<ResponseEntity<JsonNode>> generate(@Valid @RequestBody ImageGenerationRequest request) {
         ModelRoute route = modelRouter.route(request.getModel());
