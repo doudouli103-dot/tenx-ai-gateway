@@ -1,5 +1,6 @@
 package com.tenx.ai.gateway.runtime;
 
+import com.tenx.ai.gateway.config.GatewayProperties;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -9,6 +10,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessModelRuntimeCommandRunner implements ModelRuntimeCommandRunner {
 
+    private final String commandShell;
+
+    public ProcessModelRuntimeCommandRunner(GatewayProperties properties) {
+        this.commandShell = resolveShell(properties.getAdmin().getCommandShell());
+    }
+
+    private static String resolveShell(String configuredShell) {
+        if (configuredShell == null || configuredShell.trim().length() == 0) {
+            return "/bin/sh";
+        }
+        return configuredShell.trim();
+    }
+
     @Override
     public CommandResult run(String command, long timeoutMillis) {
         if (command == null || command.trim().length() == 0) {
@@ -16,7 +30,7 @@ public class ProcessModelRuntimeCommandRunner implements ModelRuntimeCommandRunn
         }
         Process process = null;
         try {
-            process = new ProcessBuilder("/bin/zsh", "-lc", command)
+            process = new ProcessBuilder(commandShell, "-lc", command)
                     .redirectErrorStream(true)
                     .start();
             boolean finished = process.waitFor(timeoutMillis, TimeUnit.MILLISECONDS);

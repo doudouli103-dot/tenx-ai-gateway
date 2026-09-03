@@ -3,6 +3,7 @@ package com.tenx.ai.gateway.provider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.tenx.ai.gateway.config.GatewayProperties;
 import com.tenx.ai.gateway.model.VideoGenerationRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -29,6 +30,7 @@ public class OpenAiCompatibleVideoProvider implements VideoProvider {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .retrieve()
+                .onStatus(HttpStatus::isError, UpstreamProviderException::fromResponse)
                 .bodyToMono(JsonNode.class);
     }
 

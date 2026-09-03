@@ -6,10 +6,10 @@ import com.tenx.ai.gateway.runtime.ModelRuntimeService;
 import com.tenx.ai.gateway.runtime.ModelRuntimeStatus;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
+import reactor.test.StepVerifier;
 
 public class ModelRuntimeControllerTest {
 
@@ -17,32 +17,38 @@ public class ModelRuntimeControllerTest {
     public void exposesModelRuntimeList() {
         ModelRuntimeController controller = new ModelRuntimeController(new StubService());
 
-        ResponseEntity<List<ModelRuntimeStatus>> response = controller.models();
-
-        Assertions.assertEquals(200, response.getStatusCodeValue());
-        Assertions.assertEquals("qwen-small", response.getBody().get(0).getId());
+        StepVerifier.create(controller.models())
+                .assertNext(response -> {
+                    Assertions.assertEquals(200, response.getStatusCodeValue());
+                    Assertions.assertEquals("qwen-small", response.getBody().get(0).getId());
+                })
+                .verifyComplete();
     }
 
     @Test
     public void startsModelByName() {
         ModelRuntimeController controller = new ModelRuntimeController(new StubService());
 
-        ResponseEntity<ModelRuntimeOperationResult> response = controller.start("qwen-small");
-
-        Assertions.assertEquals(200, response.getStatusCodeValue());
-        Assertions.assertEquals("qwen-small", response.getBody().getModel());
-        Assertions.assertEquals("start", response.getBody().getAction());
+        StepVerifier.create(controller.start("qwen-small"))
+                .assertNext(response -> {
+                    Assertions.assertEquals(200, response.getStatusCodeValue());
+                    Assertions.assertEquals("qwen-small", response.getBody().getModel());
+                    Assertions.assertEquals("start", response.getBody().getAction());
+                })
+                .verifyComplete();
     }
 
     @Test
     public void stopsModelByName() {
         ModelRuntimeController controller = new ModelRuntimeController(new StubService());
 
-        ResponseEntity<ModelRuntimeOperationResult> response = controller.stop("qwen-small");
-
-        Assertions.assertEquals(200, response.getStatusCodeValue());
-        Assertions.assertEquals("qwen-small", response.getBody().getModel());
-        Assertions.assertEquals("stop", response.getBody().getAction());
+        StepVerifier.create(controller.stop("qwen-small"))
+                .assertNext(response -> {
+                    Assertions.assertEquals(200, response.getStatusCodeValue());
+                    Assertions.assertEquals("qwen-small", response.getBody().getModel());
+                    Assertions.assertEquals("stop", response.getBody().getAction());
+                })
+                .verifyComplete();
     }
 
     private static class StubService extends ModelRuntimeService {

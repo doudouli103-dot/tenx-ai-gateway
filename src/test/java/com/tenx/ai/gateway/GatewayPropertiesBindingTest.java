@@ -28,6 +28,20 @@ public class GatewayPropertiesBindingTest {
         Assertions.assertEquals(200, properties.getHttp().getMaxConnections());
         Assertions.assertEquals(5000, properties.getHttp().getConnectTimeoutMillis());
         Assertions.assertEquals(120000, properties.getHttp().getResponseTimeoutMillis());
-        Assertions.assertEquals(2097152, properties.getHttp().getMaxInMemorySizeBytes());
+        Assertions.assertEquals(16777216, properties.getHttp().getMaxInMemorySizeBytes());
+    }
+
+    @Test
+    public void bindsAdminCommandShellDefault() {
+        Assertions.assertEquals("/bin/sh", properties.getAdmin().getCommandShell());
+    }
+
+    @Test
+    public void bindsPerProviderTimeoutsForVideoAndImage() {
+        Assertions.assertEquals(Integer.valueOf(600000),
+                properties.getProviders().get("image-compatible").getResponseTimeoutMillis());
+        Assertions.assertEquals(Integer.valueOf(1800000),
+                properties.getProviders().get("video-compatible").getReadTimeoutMillis());
+        Assertions.assertNull(properties.getProviders().get("local-compatible").getResponseTimeoutMillis());
     }
 }

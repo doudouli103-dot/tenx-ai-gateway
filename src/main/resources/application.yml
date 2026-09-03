@@ -7,6 +7,7 @@ tenx:
       api-keys: ${TENX_AI_GATEWAY_API_KEYS:local-dev-key}
       admin:
         command-timeout-millis: ${TENX_AI_GATEWAY_ADMIN_COMMAND_TIMEOUT_MILLIS:60000}
+        command-shell: ${TENX_AI_GATEWAY_ADMIN_COMMAND_SHELL:/bin/sh}
         cors-allowed-origins: ${TENX_AI_GATEWAY_ADMIN_CORS_ALLOWED_ORIGINS:http://127.0.0.1:5173,http://localhost:5173,http://macstudio.tentest.cn:5173,http://192.168.1.102:5173}
       http:
         max-connections: ${TENX_AI_GATEWAY_HTTP_MAX_CONNECTIONS:200}
@@ -15,7 +16,7 @@ tenx:
         response-timeout-millis: ${TENX_AI_GATEWAY_HTTP_RESPONSE_TIMEOUT_MILLIS:120000}
         read-timeout-millis: ${TENX_AI_GATEWAY_HTTP_READ_TIMEOUT_MILLIS:120000}
         write-timeout-millis: ${TENX_AI_GATEWAY_HTTP_WRITE_TIMEOUT_MILLIS:120000}
-        max-in-memory-size-bytes: ${TENX_AI_GATEWAY_HTTP_MAX_IN_MEMORY_SIZE_BYTES:2097152}
+        max-in-memory-size-bytes: ${TENX_AI_GATEWAY_HTTP_MAX_IN_MEMORY_SIZE_BYTES:16777216}
       providers:
         local-compatible:
           type: openai-compatible
@@ -25,10 +26,14 @@ tenx:
           type: openai-image-compatible
           base-url: ${TENX_IMAGE_OPENAI_BASE_URL:http://127.0.0.1:4010}
           api-key: ${TENX_IMAGE_OPENAI_API_KEY:}
+          response-timeout-millis: ${TENX_IMAGE_OPENAI_RESPONSE_TIMEOUT_MILLIS:600000}
+          read-timeout-millis: ${TENX_IMAGE_OPENAI_READ_TIMEOUT_MILLIS:600000}
         video-compatible:
           type: openai-video-compatible
           base-url: ${TENX_VIDEO_OPENAI_BASE_URL:http://127.0.0.1:4020}
           api-key: ${TENX_VIDEO_OPENAI_API_KEY:}
+          response-timeout-millis: ${TENX_VIDEO_OPENAI_RESPONSE_TIMEOUT_MILLIS:1800000}
+          read-timeout-millis: ${TENX_VIDEO_OPENAI_READ_TIMEOUT_MILLIS:1800000}
         cloud-openai:
           type: openai-compatible
           base-url: ${TENX_CLOUD_OPENAI_BASE_URL:https://api.openai.com}

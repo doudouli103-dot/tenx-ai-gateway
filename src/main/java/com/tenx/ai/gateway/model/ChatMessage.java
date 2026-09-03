@@ -1,16 +1,18 @@
 package com.tenx.ai.gateway.model;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 public class ChatMessage {
 
     private String role;
-    private String content;
+    private JsonNode content;
+    private Map<String, JsonNode> extra = new LinkedHashMap<String, JsonNode>();
 
     public ChatMessage() {
-    }
-
-    public ChatMessage(String role, String content) {
-        this.role = role;
-        this.content = content;
     }
 
     public String getRole() {
@@ -21,11 +23,21 @@ public class ChatMessage {
         this.role = role;
     }
 
-    public String getContent() {
+    public JsonNode getContent() {
         return content;
     }
 
-    public void setContent(String content) {
+    public void setContent(JsonNode content) {
         this.content = content;
+    }
+
+    @JsonAnyGetter
+    public Map<String, JsonNode> getExtra() {
+        return extra;
+    }
+
+    @JsonAnySetter
+    public void setExtra(String name, JsonNode value) {
+        this.extra.put(name, value);
     }
 }

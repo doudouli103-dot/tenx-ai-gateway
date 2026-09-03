@@ -67,6 +67,7 @@ public class GatewayProperties {
     public static class AdminConfig {
         private boolean enabled = true;
         private long commandTimeoutMillis = 60000;
+        private String commandShell = "/bin/sh";
         private List<String> corsAllowedOrigins = new ArrayList<String>();
 
         public AdminConfig() {
@@ -92,6 +93,14 @@ public class GatewayProperties {
             this.commandTimeoutMillis = commandTimeoutMillis;
         }
 
+        public String getCommandShell() {
+            return commandShell;
+        }
+
+        public void setCommandShell(String commandShell) {
+            this.commandShell = commandShell;
+        }
+
         public List<String> getCorsAllowedOrigins() {
             return corsAllowedOrigins;
         }
@@ -105,6 +114,8 @@ public class GatewayProperties {
         private String type;
         private String baseUrl;
         private String apiKey;
+        private Integer responseTimeoutMillis;
+        private Integer readTimeoutMillis;
 
         public String getType() {
             return type;
@@ -129,6 +140,22 @@ public class GatewayProperties {
         public void setApiKey(String apiKey) {
             this.apiKey = apiKey;
         }
+
+        public Integer getResponseTimeoutMillis() {
+            return responseTimeoutMillis;
+        }
+
+        public void setResponseTimeoutMillis(Integer responseTimeoutMillis) {
+            this.responseTimeoutMillis = responseTimeoutMillis;
+        }
+
+        public Integer getReadTimeoutMillis() {
+            return readTimeoutMillis;
+        }
+
+        public void setReadTimeoutMillis(Integer readTimeoutMillis) {
+            this.readTimeoutMillis = readTimeoutMillis;
+        }
     }
 
     public static class HttpConfig {
@@ -138,7 +165,7 @@ public class GatewayProperties {
         private long responseTimeoutMillis = 120000;
         private long readTimeoutMillis = 120000;
         private long writeTimeoutMillis = 120000;
-        private int maxInMemorySizeBytes = 2097152;
+        private int maxInMemorySizeBytes = 16777216;
 
         public int getMaxConnections() {
             return maxConnections;

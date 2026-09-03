@@ -3,6 +3,7 @@ package com.tenx.ai.gateway.provider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.tenx.ai.gateway.config.GatewayProperties;
 import com.tenx.ai.gateway.model.ChatRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -30,6 +31,7 @@ public class OpenAiCompatibleProvider implements ModelProvider {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .retrieve()
+                .onStatus(HttpStatus::isError, UpstreamProviderException::fromResponse)
                 .bodyToMono(JsonNode.class);
     }
 
@@ -42,6 +44,7 @@ public class OpenAiCompatibleProvider implements ModelProvider {
                 .accept(MediaType.TEXT_EVENT_STREAM)
                 .bodyValue(request)
                 .retrieve()
+                .onStatus(HttpStatus::isError, UpstreamProviderException::fromResponse)
                 .bodyToFlux(String.class);
     }
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.tenx.ai.gateway.model.ChatRequest;
 import com.tenx.ai.gateway.provider.ModelProvider;
 import com.tenx.ai.gateway.provider.ModelProviderRegistry;
+import com.tenx.ai.gateway.provider.UpstreamProviderException;
 import com.tenx.ai.gateway.routing.ModelRoute;
 import com.tenx.ai.gateway.routing.ModelRouter;
 import org.springframework.http.MediaType;
@@ -55,6 +56,9 @@ public class OpenAiController {
         }
 
         return primary.onErrorResume(error -> {
+            if (!isRetryable(error)) {
+                return Mono.error(error);
+            }
             ModelProvider fallbackProvider = providerRegistry.get(route.getFallbackProvider().getType());
             return fallbackProvider.chat(request.copyForModel(route.getFallbackModel()), route.getFallbackProvider());
         });
@@ -68,8 +72,19 @@ public class OpenAiController {
         }
 
         return primary.onErrorResume(error -> {
+            if (!isRetryable(error)) {
+                return Flux.error(error);
+            }
             ModelProvider fallbackProvider = providerRegistry.get(route.getFallbackProvider().getType());
             return fallbackProvider.streamChat(request.copyForModel(route.getFallbackModel()), route.getFallbackProvider());
         });
+    }
+
+    private boolean isRetryable(Throwable error) {
+        if (error instanceof UpstreamProviderException) {
+            return ((UpstreamProviderException) error).isRetryable();
+        }
+        // Connection failures, timeouts, and other transport errors are worth a fallback.
+        return true;
     }
 }

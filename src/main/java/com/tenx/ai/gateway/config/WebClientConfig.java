@@ -16,25 +16,35 @@ import reactor.netty.resources.ConnectionProvider;
 @Configuration
 public class WebClientConfig {
 
-    @Bean
-    public WebClient.Builder webClientBuilder(GatewayProperties properties) {
+    @Bean(destroyMethod = "dispose")
+    public ConnectionProvider connectionProvider(GatewayProperties properties) {
         GatewayProperties.HttpConfig httpConfig = properties.getHttp();
-        ConnectionProvider connectionProvider = ConnectionProvider.builder("tenx-ai-gateway")
+        return ConnectionProvider.builder("tenx-ai-gateway")
                 .maxConnections(httpConfig.getMaxConnections())
                 .pendingAcquireTimeout(Duration.ofMillis(httpConfig.getPendingAcquireTimeoutMillis()))
                 .build();
+    }
+
+    @Bean
+    public ExchangeStrategies exchangeStrategies(GatewayProperties properties) {
+        return ExchangeStrategies.builder()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(properties.getHttp().getMaxInMemorySizeBytes()))
+                .build();
+    }
+
+    @Bean
+    public WebClient.Builder webClientBuilder(ConnectionProvider connectionProvider,
+                                              ExchangeStrategies exchangeStrategies,
+                                              GatewayProperties properties) {
+        GatewayProperties.HttpConfig httpConfig = properties.getHttp();
         HttpClient httpClient = HttpClient.create(connectionProvider)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, httpConfig.getConnectTimeoutMillis())
                 .responseTimeout(Duration.ofMillis(httpConfig.getResponseTimeoutMillis()))
                 .doOnConnected(connection -> connection
                         .addHandlerLast(new ReadTimeoutHandler(httpConfig.getReadTimeoutMillis(), TimeUnit.MILLISECONDS))
                         .addHandlerLast(new WriteTimeoutHandler(httpConfig.getWriteTimeoutMillis(), TimeUnit.MILLISECONDS)));
-        ExchangeStrategies strategies = ExchangeStrategies.builder()
-                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(httpConfig.getMaxInMemorySizeBytes()))
-                .build();
-
         return WebClient.builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .exchangeStrategies(strategies);
+                .exchangeStrategies(exchangeStrategies);
     }
 }
