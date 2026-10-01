@@ -1168,6 +1168,20 @@ curl -N http://127.0.0.1:8088/v1/chat/completions \
 mvn test
 ```
 
+The regular test suite does not require a running model. To run the opt-in integration test against a real
+`qwen-small` llama-server on port `4000`:
+
+```bash
+TENX_RUN_LIVE_MODEL_TEST=true \
+TENX_LIVE_MODEL_BASE_URL=http://127.0.0.1:4000 \
+TENX_LIVE_MODEL_API_KEY=local-dev-key \
+mvn -Dtest=LiveLlamaGatewayIntegrationTest test
+```
+
+The live test starts the Gateway on a random port and verifies API key authentication, model routing, request
+passthrough, and the OpenAI-compatible response. `TENX_LIVE_MODEL_BASE_URL` and
+`TENX_LIVE_MODEL_API_KEY` are optional when the displayed defaults match the local llama-server.
+
 ## Suggested Next Versions
 
 V2:
