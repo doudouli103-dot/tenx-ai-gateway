@@ -4,6 +4,7 @@ import com.tenx.ai.gateway.runtime.ModelRuntimeOperationResult;
 import com.tenx.ai.gateway.runtime.ModelRuntimeService;
 import com.tenx.ai.gateway.runtime.ModelRuntimeStatus;
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +21,7 @@ import reactor.core.scheduler.Schedulers;
  * 避免拖慢其它请求。
  */
 @RestController
+@ConditionalOnProperty(prefix = "tenx.ai.gateway.admin", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class ModelRuntimeController {
 
     /** 运行时管理服务，承载列表/启动/停止逻辑。 */

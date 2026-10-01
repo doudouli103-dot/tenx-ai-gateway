@@ -90,9 +90,11 @@ public class OpenAiController {
             return primary;
         }
 
-        return primary.onErrorResume(error -> {
-            if (!isRetryable(error)) {
-                return Flux.error(error);
+        // 只允许在主上游尚未输出任何事件时回落。一旦已经把部分 SSE 数据发给客户端，
+        // 再切换上游会把两次回答拼在同一个事件流中，产生无法识别的混合响应。
+        return primary.switchOnFirst((signal, flux) -> {
+            if (!signal.hasError() || !isRetryable(signal.getThrowable())) {
+                return flux;
             }
             ModelProvider fallbackProvider = providerRegistry.get(route.getFallbackProvider().getType());
             return fallbackProvider.streamChat(request.copyForModel(route.getFallbackModel()), route.getFallbackProvider());

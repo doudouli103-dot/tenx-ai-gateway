@@ -8,10 +8,19 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.http.ResponseEntity;
 import reactor.test.StepVerifier;
 
 public class ModelRuntimeControllerTest {
+
+    @Test
+    public void doesNotRegisterControllerWhenAdminIsDisabled() {
+        new ApplicationContextRunner()
+                .withUserConfiguration(ModelRuntimeController.class)
+                .withPropertyValues("tenx.ai.gateway.admin.enabled=false")
+                .run(context -> Assertions.assertFalse(context.containsBean("modelRuntimeController")));
+    }
 
     @Test
     public void exposesModelRuntimeList() {

@@ -170,6 +170,7 @@ export TENX_VIDEO_OPENAI_BASE_URL=http://127.0.0.1:4020
 export TENX_VIDEO_OPENAI_API_KEY=
 export TENX_CLOUD_OPENAI_BASE_URL=https://api.openai.com
 export TENX_CLOUD_OPENAI_API_KEY=your-cloud-key
+export TENX_AI_GATEWAY_ADMIN_ENABLED=true
 export TENX_AI_GATEWAY_ADMIN_COMMAND_TIMEOUT_MILLIS=60000
 export TENX_AI_GATEWAY_ADMIN_CORS_ALLOWED_ORIGINS=http://127.0.0.1:5173,http://localhost:5173,http://macstudio.tentest.cn:5173,http://192.168.1.102:5173
 ```
@@ -267,6 +268,8 @@ For speech generation, do not add a Gateway route. Use `video-agent -> tenx-ai-t
 The Gateway can expose model runtime status and manually execute configured start/stop commands for each model.
 
 Admin endpoints use the same API key authentication as `/v1`:
+
+Set `TENX_AI_GATEWAY_ADMIN_ENABLED=false` to disable all `/admin/models*` endpoints. The feature is enabled by default.
 
 ```bash
 curl http://127.0.0.1:8088/admin/models \
