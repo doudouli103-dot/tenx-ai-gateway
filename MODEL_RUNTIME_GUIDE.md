@@ -195,43 +195,53 @@ MPS: True
 先激活环境：
 
 ```bash
-conda activate comfyui
-cd /Users/lijunwei/ljwai/tenx-ai-models/comfyui/ComfyUI
+mkdir -p \
+  "/Volumes/LJW/tenx-ai/comfyui/input" \
+  "/Volumes/LJW/tenx-ai/comfyui/output" \
+  "/Volumes/LJW/tenx-ai/comfyui/temp" \
+  "/Volumes/LJW/tenx-ai/comfyui/adapter-results" \
+  "/Volumes/LJW/tenx-ai/comfyui/archive"
 
-PYTORCH_ENABLE_MPS_FALLBACK=1 \
+conda activate comfyui
+cd "/Users/lijunwei/ljwai/tenx-ai-models/comfyui/ComfyUI"
+
 caffeinate -dimsu \
+env PYTORCH_ENABLE_MPS_FALLBACK=1 \
 python main.py \
   --listen 0.0.0.0 \
   --port 8188 \
   --reserve-vram 8 \
-  --input-directory /Volumes/LJW/tenx-ai/comfyui/input \
-  --output-directory /Volumes/LJW/tenx-ai/comfyui/output
+  --input-directory "/Volumes/LJW/tenx-ai/comfyui/input" \
+  --output-directory "/Volumes/LJW/tenx-ai/comfyui/output" \
+  --temp-directory "/Volumes/LJW/tenx-ai/comfyui"
 ```
 
 也可以不激活环境，直接使用 `conda run`：
 
 ```bash
-cd /Users/lijunwei/ljwai/tenx-ai-models/comfyui/ComfyUI
+cd "/Users/lijunwei/ljwai/tenx-ai-models/comfyui/ComfyUI"
 
-PYTORCH_ENABLE_MPS_FALLBACK=1 \
 caffeinate -dimsu \
+env PYTORCH_ENABLE_MPS_FALLBACK=1 \
 conda run --no-capture-output -n comfyui \
   python main.py \
   --listen 0.0.0.0 \
   --port 8188 \
   --reserve-vram 8 \
-  --input-directory /Volumes/LJW/tenx-ai/comfyui/input \
-  --output-directory /Volumes/LJW/tenx-ai/comfyui/output
+  --input-directory "/Volumes/LJW/tenx-ai/comfyui/input" \
+  --output-directory "/Volumes/LJW/tenx-ai/comfyui/output" \
+  --temp-directory "/Volumes/LJW/tenx-ai/comfyui"
 ```
 
-以上命令将上传的输入素材和工作流直接生成的结果保存到外接 HDD。启动前确保 `/Volumes/LJW` 已挂载，并提前创建相关目录：
+以上命令将上传的输入素材、工作流直接生成的结果和临时文件保存到外接 HDD。`--temp-directory` 会自动在指定目录下使用 `temp` 子目录，因此这里传入 `/Volumes/LJW/tenx-ai/comfyui`，不要重复追加 `/temp`。启动前确保 `/Volumes/LJW` 已挂载，并提前创建相关目录：
 
 ```bash
 mkdir -p \
-  /Volumes/LJW/tenx-ai/comfyui/input \
-  /Volumes/LJW/tenx-ai/comfyui/output \
-  /Volumes/LJW/tenx-ai/comfyui/adapter-results \
-  /Volumes/LJW/tenx-ai/comfyui/archive
+  "/Volumes/LJW/tenx-ai/comfyui/input" \
+  "/Volumes/LJW/tenx-ai/comfyui/output" \
+  "/Volumes/LJW/tenx-ai/comfyui/temp" \
+  "/Volumes/LJW/tenx-ai/comfyui/adapter-results" \
+  "/Volumes/LJW/tenx-ai/comfyui/archive"
 ```
 
 `adapter-results` 供 adapter 或客户端下载结果使用，`archive` 用于长期存档；两者不是 ComfyUI 原生命令行参数。
