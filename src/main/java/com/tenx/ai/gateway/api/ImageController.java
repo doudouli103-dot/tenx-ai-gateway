@@ -16,8 +16,7 @@ import reactor.core.publisher.Mono;
 /**
  * OpenAI 兼容的图像生成入口，处理 {@code /v1/images/generations}。
  *
- * <p>流程：解析路由 → 校验 capability 为 image → 转发给对应 provider → 原样返回上游响应。
- * 网关本身不生成图像，也不保存图像文件。
+ * <p>流程：解析路由 → 校验 capability 为 image → 调用对应 provider → 返回结果地址。
  */
 @RestController
 public class ImageController {

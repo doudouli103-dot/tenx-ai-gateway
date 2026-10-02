@@ -11,18 +11,18 @@ This version focuses on model onboarding, model download guides, deployment note
 Boundary rule:
 
 ```text
-tenx-ai-gateway only routes model calls.
+tenx-ai-gateway routes model calls and serves saved ComfyUI image results.
 It does not call tenx-ai-tts-adapter.
 It does not call study-ai-document-center-backend.
-It does not generate final.mp4 or store media assets.
+It does not generate final.mp4 or store video assets.
 ```
 
 Runtime ownership is split by model type:
 
 - Chat models run behind `llama.cpp` or another OpenAI-compatible text inference service.
-- Image models run behind `ComfyUI` through `image-adapter`.
+- Image models run in `ComfyUI:8188`; the Gateway submits fixed workflows directly.
 - Video models run behind `ComfyUI` through `video-adapter`.
-- Generated image and video files are handled by `tenx-ai-media-service`, which stores them under its own local media storage and returns downloadable asset URLs for WebUI clients.
+- ComfyUI saves Gateway generated images to the external disk. The Gateway provides authenticated, permanent download URLs. Video assets may still be handled by `tenx-ai-media-service`.
 
 Recommended model placement:
 
@@ -32,8 +32,8 @@ Recommended model placement:
 | `gpt-oss-120b` | Chat | `llama.cpp:4000` | GGUF |
 | `qwen-small` | Chat | `llama.cpp:4000` | GGUF |
 | `gpt-5` | Chat | Cloud OpenAI-compatible provider | No local download |
-| `qwen-image` | Image | `ComfyUI:8188` through `image-adapter:4010` | ComfyUI model components |
-| `flux-dev` | Image | `ComfyUI:8188` through `image-adapter:4010` | ComfyUI model components |
+| `qwen-image` | Image | Direct `ComfyUI:8188` workflow | ComfyUI model components |
+| `flux-dev` | Image | Direct `ComfyUI:8188` workflow | ComfyUI model components |
 | `HunyuanVideo-1.5` | Video | `ComfyUI:8188` through `video-adapter:4020` | ComfyUI model components |
 | `Wan2.2-TI2V-5B` | Video | `ComfyUI:8188` through `video-adapter:4020` | ComfyUI model components |
 
@@ -54,7 +54,6 @@ flowchart TD
     G[tenx-ai-gateway<br/>Unified entry / API key auth / routing / forwarding]
 
     T[llama.cpp:4000<br/>Chat models]
-    IA[image-adapter:4010<br/>Image adapter]
     VA[video-adapter:4020<br/>Video adapter]
     C[ComfyUI:8188<br/>Image and video workflows]
     S[tenx-ai-media-service storage<br/>Generated file storage]
@@ -65,22 +64,21 @@ flowchart TD
     A3 --> G
 
     G --> T
-    G --> IA
+    G --> C
     G --> VA
 
-    IA --> C
     VA --> C
 
     A3 --> S
 ```
 
-In this architecture, Open WebUI and ZCode call the Gateway through an OpenAI-compatible `/v1` base URL. `tenx-ai-webui` calls `tenx-ai-media-service`, and the media service calls the Gateway plus its own local media storage. The Gateway routes chat requests to `llama.cpp`, routes image requests to `image-adapter`, and routes video requests to `video-adapter`.
+In this architecture, Open WebUI and ZCode call the Gateway through an OpenAI-compatible `/v1` base URL. `tenx-ai-webui` calls `tenx-ai-media-service`, and the media service calls the Gateway plus its own local media storage. The Gateway routes chat requests to `llama.cpp`, submits image workflows directly to ComfyUI, and routes video requests to `video-adapter`.
 
 Speech/TTS is intentionally outside this Gateway. `video-agent` calls `tenx-ai-tts-adapter` directly for CosyVoice narration.
 
 ## Calling Chains
 
-`tenx-ai-gateway` is only the AI model gateway. It should not call business systems such as `study-ai-document-center-backend`, and it should not store generated images, videos, or audio files.
+`tenx-ai-gateway` does not call business systems such as `study-ai-document-center-backend`. It serves generated images from the configured ComfyUI output disk; video and audio storage remain outside this Gateway.
 
 Inbound callers:
 
@@ -97,7 +95,7 @@ Outbound dependencies:
 | --- | --- | --- | --- |
 | Chat | `qwen3-coder-next` | `TENX_LOCAL_OPENAI_BASE_URL` such as `llama.cpp:4000` | None |
 | Cloud chat | `gpt-5` | `TENX_CLOUD_OPENAI_BASE_URL` | None |
-| Image | `qwen-image`, `flux-dev` | `TENX_IMAGE_OPENAI_BASE_URL` such as `image-adapter:4010` | `tenx-ai-media-service` |
+| Image | `qwen-image`, `flux-dev` | `TENX_COMFYUI_BASE_URL` such as `host.docker.internal:8188` | ComfyUI output on `/Volumes/LJW` |
 | Video | `Wan2.2-TI2V-5B`, `HunyuanVideo-1.5` | `TENX_VIDEO_OPENAI_BASE_URL` such as `video-adapter:4020` | `tenx-ai-media-service` |
 
 End-to-end chains:
@@ -113,9 +111,9 @@ video-agent-webui
   -> video-agent
       -> tenx-ai-media-service /api/v1/images/generations
           -> tenx-ai-gateway /v1/images/generations
-              -> image-adapter
-                  -> ComfyUI
-          -> tenx-ai-media-service storage/media
+              -> ComfyUI:8188
+                  -> /Volumes/LJW/tenx-ai/comfyui/output/tenx
+          -> authenticated Gateway download URL
 
 Video:
 video-agent-webui
@@ -131,6 +129,7 @@ video-agent-webui
 
 - `POST /v1/chat/completions`
 - `POST /v1/images/generations`
+- `GET /v1/images/results/{resultId}/content`
 - `POST /v1/videos/generations`
 - `GET /v1/models`
 - `GET /admin/models`
@@ -138,7 +137,7 @@ video-agent-webui
 - `POST /admin/models/{model}/stop`
 - `GET /healthz`
 - OpenAI-compatible chat request forwarding
-- OpenAI-compatible image generation forwarding
+- Direct ComfyUI image generation with permanent, authenticated result URLs
 - OpenAI-compatible video generation forwarding
 - Direct model names in the request, such as `qwen3-coder-next` and `gpt-oss-120b`
 - Provider routing through configuration
@@ -164,8 +163,9 @@ Important environment variables:
 export TENX_AI_GATEWAY_API_KEYS=local-dev-key
 export TENX_LOCAL_OPENAI_BASE_URL=http://127.0.0.1:4000
 export TENX_LOCAL_OPENAI_API_KEY=
-export TENX_IMAGE_OPENAI_BASE_URL=http://127.0.0.1:4010
-export TENX_IMAGE_OPENAI_API_KEY=
+export TENX_COMFYUI_BASE_URL=http://127.0.0.1:8188
+export TENX_COMFYUI_RESULTS_DIRECTORY=/Volumes/LJW/tenx-ai/comfyui/output
+export TENX_IMAGE_PUBLIC_BASE_URL=http://127.0.0.1:8088
 export TENX_VIDEO_OPENAI_BASE_URL=http://127.0.0.1:4020
 export TENX_VIDEO_OPENAI_API_KEY=
 export TENX_CLOUD_OPENAI_BASE_URL=https://api.openai.com
@@ -374,7 +374,7 @@ Check service status:
 
 ```bash
 docker compose ps
-docker compose logs -f tenx-ai-gateway
+# This Compose service uses logging.driver=none, so Docker logs are unavailable.
 curl http://127.0.0.1:8088/healthz
 ```
 
@@ -395,7 +395,8 @@ Default Docker environment:
 ```yaml
 TENX_AI_GATEWAY_API_KEYS: local-dev-key
 TENX_LOCAL_OPENAI_BASE_URL: http://host.docker.internal:4000
-TENX_IMAGE_OPENAI_BASE_URL: http://host.docker.internal:4010
+TENX_COMFYUI_BASE_URL: http://host.docker.internal:8188
+TENX_IMAGE_PUBLIC_BASE_URL: http://lijunweideMac-Studio.local:8088
 TENX_VIDEO_OPENAI_BASE_URL: http://host.docker.internal:4020
 TENX_CLOUD_OPENAI_BASE_URL: https://api.openai.com
 ```
@@ -644,7 +645,7 @@ Recommended placement:
 ```text
 Mac Studio
   ComfyUI:8188
-  image-adapter:4010
+  Gateway image provider -> ComfyUI:8188
   video-adapter:4020
   tenx-ai-gateway:8088
 ```
@@ -681,19 +682,20 @@ Open ComfyUI:
 http://macstudio.tentest.cn:8188
 ```
 
-After downloading the image and video models, load the matching workflow template in ComfyUI and run it once manually. Then connect it to the Gateway through `image-adapter` and `video-adapter`.
+After downloading the image and video models, run the matching workflow in ComfyUI once manually. The Gateway includes API workflow templates for `qwen-image` and `flux-dev`. Video still uses `video-adapter`.
 
 Gateway environment:
 
 ```bash
-export TENX_IMAGE_OPENAI_BASE_URL=http://127.0.0.1:4010
+export TENX_COMFYUI_BASE_URL=http://127.0.0.1:8188
+export TENX_COMFYUI_RESULTS_DIRECTORY=/Volumes/LJW/tenx-ai/comfyui/output
 export TENX_VIDEO_OPENAI_BASE_URL=http://127.0.0.1:4020
 ```
 
 If the Gateway runs in Docker on the same Mac host, use:
 
 ```bash
-TENX_IMAGE_OPENAI_BASE_URL=http://host.docker.internal:4010
+TENX_COMFYUI_BASE_URL=http://host.docker.internal:8188
 TENX_VIDEO_OPENAI_BASE_URL=http://host.docker.internal:4020
 ```
 
@@ -948,38 +950,29 @@ curl -s http://127.0.0.1:8088/v1/images/generations \
   }'
 ```
 
-The image provider can return either:
-
-```json
-{
-  "data": [
-    {"b64_json": "..."}
-  ]
-}
-```
-
-or:
-
-```json
-{
-  "data": [
-    {"url": "http://image-provider/result.png"}
-  ]
-}
-```
-
-The Gateway returns the provider response as-is. If the provider returns base64, the Gateway returns base64. If the provider returns a URL, the Gateway returns that URL:
+The Gateway calls ComfyUI directly, saves the result under the external disk's `output/tenx` directory, and returns a permanent download URL. It does not return Base64:
 
 ```json
 {
   "created": 1780000000,
   "data": [
     {
-      "url": "http://image-provider/result.png"
+      "result_id": "tenx_0123456789abcdef0123456789abcdef_00001_",
+      "url": "http://127.0.0.1:8088/v1/images/results/tenx_0123456789abcdef0123456789abcdef_00001_/content"
     }
   ]
 }
 ```
+
+Download with the same API key; the response is streamed as PNG bytes:
+
+```bash
+curl -fL 'http://127.0.0.1:8088/v1/images/results/tenx_0123456789abcdef0123456789abcdef_00001_/content' \
+  -H 'Authorization: Bearer local-dev-key' \
+  -o result.png
+```
+
+Set `TENX_IMAGE_PUBLIC_BASE_URL` to the address reachable by callers, for example `http://lijunweideMac-Studio.local:8088`. The URL does not expire. The Gateway does not delete generated images; monitor free space on `/Volumes/LJW`. Supported image request parameters are `model`, `prompt`, `size`, `n` (1–4), optional `seed`, `steps`, and `negative_prompt` for Qwen-Image. `response_format=b64_json` is rejected.
 
 Video generation uses an OpenAI-compatible endpoint:
 

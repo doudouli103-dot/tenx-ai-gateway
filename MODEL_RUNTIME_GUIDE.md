@@ -199,7 +199,6 @@ mkdir -p \
   "/Volumes/LJW/tenx-ai/comfyui/input" \
   "/Volumes/LJW/tenx-ai/comfyui/output" \
   "/Volumes/LJW/tenx-ai/comfyui/temp" \
-  "/Volumes/LJW/tenx-ai/comfyui/adapter-results" \
   "/Volumes/LJW/tenx-ai/comfyui/archive"
 
 conda activate comfyui
@@ -240,11 +239,10 @@ mkdir -p \
   "/Volumes/LJW/tenx-ai/comfyui/input" \
   "/Volumes/LJW/tenx-ai/comfyui/output" \
   "/Volumes/LJW/tenx-ai/comfyui/temp" \
-  "/Volumes/LJW/tenx-ai/comfyui/adapter-results" \
   "/Volumes/LJW/tenx-ai/comfyui/archive"
 ```
 
-`adapter-results` 供 adapter 或客户端下载结果使用，`archive` 用于长期存档；两者不是 ComfyUI 原生命令行参数。
+Gateway 生成的图片由 ComfyUI 保存在 `output/tenx`，网关从该目录提供长期下载地址。`archive` 是可选的人工归档目录，不是 ComfyUI 原生命令行参数。
 
 访问路径：
 
@@ -286,11 +284,12 @@ export TENX_LOCAL_OPENAI_BASE_URL=http://127.0.0.1:4000
 export TENX_LOCAL_OPENAI_API_KEY=local-dev-key
 ```
 
-ComfyUI 不直接向 Gateway 暴露 OpenAI 兼容图片或视频接口。Gateway 应通过对应 adapter 访问：
+Gateway 直接调用 ComfyUI 的图片工作流，视频仍使用独立 adapter。网关在 Docker 中运行时，使用以下地址：
 
 ```bash
-export TENX_IMAGE_OPENAI_BASE_URL=http://127.0.0.1:4010
-export TENX_VIDEO_OPENAI_BASE_URL=http://127.0.0.1:4020
+TENX_COMFYUI_BASE_URL=http://host.docker.internal:8188
+TENX_IMAGE_PUBLIC_BASE_URL=http://lijunweideMac-Studio.local:8088
+TENX_VIDEO_OPENAI_BASE_URL=http://host.docker.internal:4020
 ```
 
 运行关系：
@@ -300,7 +299,7 @@ Chat:
 tenx-ai-gateway -> llama-server:4000
 
 Image:
-tenx-ai-gateway -> image-adapter:4010 -> ComfyUI:8188
+tenx-ai-gateway -> ComfyUI:8188 -> /Volumes/LJW/tenx-ai/comfyui/output/tenx
 
 Video:
 tenx-ai-gateway -> video-adapter:4020 -> ComfyUI:8188

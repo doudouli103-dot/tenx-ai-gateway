@@ -18,17 +18,22 @@ tenx:
         read-timeout-millis: ${TENX_AI_GATEWAY_HTTP_READ_TIMEOUT_MILLIS:120000}
         write-timeout-millis: ${TENX_AI_GATEWAY_HTTP_WRITE_TIMEOUT_MILLIS:120000}
         max-in-memory-size-bytes: ${TENX_AI_GATEWAY_HTTP_MAX_IN_MEMORY_SIZE_BYTES:16777216}
+      comfyui:
+        results-directory: ${TENX_COMFYUI_RESULTS_DIRECTORY:/data/comfy-output}
+        public-base-url: ${TENX_IMAGE_PUBLIC_BASE_URL:http://127.0.0.1:8088}
+        poll-interval-millis: ${TENX_COMFYUI_POLL_INTERVAL_MILLIS:2000}
+        generation-timeout-millis: ${TENX_COMFYUI_GENERATION_TIMEOUT_MILLIS:600000}
+        max-concurrent-generations: ${TENX_COMFYUI_MAX_CONCURRENT_GENERATIONS:1}
       providers:
         local-compatible:
           type: openai-compatible
           base-url: ${TENX_LOCAL_OPENAI_BASE_URL:http://127.0.0.1:4000}
           api-key: ${TENX_LOCAL_OPENAI_API_KEY:}
         image-compatible:
-          type: openai-image-compatible
-          base-url: ${TENX_IMAGE_OPENAI_BASE_URL:http://127.0.0.1:4010}
-          api-key: ${TENX_IMAGE_OPENAI_API_KEY:}
-          response-timeout-millis: ${TENX_IMAGE_OPENAI_RESPONSE_TIMEOUT_MILLIS:600000}
-          read-timeout-millis: ${TENX_IMAGE_OPENAI_READ_TIMEOUT_MILLIS:600000}
+          type: comfyui
+          base-url: ${TENX_COMFYUI_BASE_URL:http://127.0.0.1:8188}
+          response-timeout-millis: ${TENX_COMFYUI_RESPONSE_TIMEOUT_MILLIS:600000}
+          read-timeout-millis: ${TENX_COMFYUI_READ_TIMEOUT_MILLIS:600000}
         video-compatible:
           type: openai-video-compatible
           base-url: ${TENX_VIDEO_OPENAI_BASE_URL:http://127.0.0.1:4020}
@@ -95,12 +100,12 @@ tenx:
           stop-command: ${TENX_RUNTIME_GPT_OSS_120B_STOP_COMMAND:/Users/lijunwei/ai-scripts/stop-chat-model.sh}
           resource-check-command: ${TENX_RUNTIME_GPT_OSS_120B_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep llama-server | grep -v grep || true}
         qwen-image:
-          health-url: ${TENX_RUNTIME_QWEN_IMAGE_HEALTH_URL:http://127.0.0.1:4010/health}
+          health-url: ${TENX_RUNTIME_QWEN_IMAGE_HEALTH_URL:http://host.docker.internal:8188/system_stats}
           start-command: ${TENX_RUNTIME_QWEN_IMAGE_START_COMMAND:/Users/lijunwei/ai-scripts/start-qwen-image.sh}
           stop-command: ${TENX_RUNTIME_QWEN_IMAGE_STOP_COMMAND:/Users/lijunwei/ai-scripts/stop-image-model.sh}
           resource-check-command: ${TENX_RUNTIME_QWEN_IMAGE_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep -E 'ComfyUI|image-adapter' | grep -v grep || true}
         flux-dev:
-          health-url: ${TENX_RUNTIME_FLUX_DEV_HEALTH_URL:http://127.0.0.1:4010/health}
+          health-url: ${TENX_RUNTIME_FLUX_DEV_HEALTH_URL:http://host.docker.internal:8188/system_stats}
           start-command: ${TENX_RUNTIME_FLUX_DEV_START_COMMAND:/Users/lijunwei/ai-scripts/start-flux-dev.sh}
           stop-command: ${TENX_RUNTIME_FLUX_DEV_STOP_COMMAND:/Users/lijunwei/ai-scripts/stop-image-model.sh}
           resource-check-command: ${TENX_RUNTIME_FLUX_DEV_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep -E 'ComfyUI|image-adapter' | grep -v grep || true}

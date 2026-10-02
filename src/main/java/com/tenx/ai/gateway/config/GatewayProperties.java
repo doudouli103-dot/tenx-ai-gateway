@@ -32,6 +32,9 @@ public class GatewayProperties {
     /** 全局 HTTP 客户端调优参数。 */
     private HttpConfig http = new HttpConfig();
 
+    /** ComfyUI 图片结果的下载与轮询配置。 */
+    private ComfyUiConfig comfyui = new ComfyUiConfig();
+
     /** 上游服务（provider）定义，key 为 provider 名。 */
     private Map<String, ProviderConfig> providers = new LinkedHashMap<String, ProviderConfig>();
 
@@ -69,6 +72,33 @@ public class GatewayProperties {
     /** 设置全局 HTTP 客户端调优参数。 */
     public void setHttp(HttpConfig http) {
         this.http = http;
+    }
+
+    public ComfyUiConfig getComfyui() {
+        return comfyui;
+    }
+
+    public void setComfyui(ComfyUiConfig comfyui) {
+        this.comfyui = comfyui;
+    }
+
+    public static class ComfyUiConfig {
+        private String resultsDirectory = "/data/comfy-output";
+        private String publicBaseUrl = "http://127.0.0.1:8088";
+        private long pollIntervalMillis = 2000;
+        private long generationTimeoutMillis = 600000;
+        private int maxConcurrentGenerations = 1;
+
+        public String getResultsDirectory() { return resultsDirectory; }
+        public void setResultsDirectory(String value) { this.resultsDirectory = value; }
+        public String getPublicBaseUrl() { return publicBaseUrl; }
+        public void setPublicBaseUrl(String value) { this.publicBaseUrl = value; }
+        public long getPollIntervalMillis() { return pollIntervalMillis; }
+        public void setPollIntervalMillis(long value) { this.pollIntervalMillis = value; }
+        public long getGenerationTimeoutMillis() { return generationTimeoutMillis; }
+        public void setGenerationTimeoutMillis(long value) { this.generationTimeoutMillis = value; }
+        public int getMaxConcurrentGenerations() { return maxConcurrentGenerations; }
+        public void setMaxConcurrentGenerations(int value) { this.maxConcurrentGenerations = value; }
     }
 
     /** 返回上游服务定义。 */

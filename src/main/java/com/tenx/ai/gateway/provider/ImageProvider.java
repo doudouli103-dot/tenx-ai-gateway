@@ -6,7 +6,7 @@ import com.tenx.ai.gateway.model.ImageGenerationRequest;
 import reactor.core.publisher.Mono;
 
 /**
- * 图像生成 provider 的统一接口。网关只转发，不生成、不保存图像。
+ * 图像生成 provider 的统一接口。
  */
 public interface ImageProvider {
 
