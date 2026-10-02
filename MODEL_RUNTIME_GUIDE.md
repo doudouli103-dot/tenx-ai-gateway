@@ -284,12 +284,11 @@ export TENX_LOCAL_OPENAI_BASE_URL=http://127.0.0.1:4000
 export TENX_LOCAL_OPENAI_API_KEY=local-dev-key
 ```
 
-Gateway 直接调用 ComfyUI 的图片工作流，视频仍使用独立 adapter。网关在 Docker 中运行时，使用以下地址：
+Gateway 直接调用 ComfyUI 的图片和视频工作流。网关在 Docker 中运行时，使用以下地址：
 
 ```bash
 TENX_COMFYUI_BASE_URL=http://host.docker.internal:8188
 TENX_IMAGE_PUBLIC_BASE_URL=http://lijunweideMac-Studio.local:8088
-TENX_VIDEO_OPENAI_BASE_URL=http://host.docker.internal:4020
 ```
 
 运行关系：
@@ -302,7 +301,7 @@ Image:
 tenx-ai-gateway -> ComfyUI:8188 -> /Volumes/LJW/tenx-ai/comfyui/output/tenx
 
 Video:
-tenx-ai-gateway -> video-adapter:4020 -> ComfyUI:8188
+tenx-ai-gateway -> ComfyUI:8188 -> /Volumes/LJW/tenx-ai/comfyui/output/tenx-video
 ```
 
 ## 停止服务

@@ -15,7 +15,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *   <li>{@code api-keys}：网关自身鉴权用的 API Key 白名单（调用方需携带其中任意一个）。</li>
  *   <li>{@code admin}：管理员运行时控制相关配置（命令执行超时、shell、CORS 来源）。</li>
  *   <li>{@code http}：全局 HTTP 客户端调优参数（连接池、各类超时、内存上限）。</li>
- *   <li>{@code providers}：上游服务定义（llama.cpp / image-adapter / video-adapter / 云端）。</li>
+ *   <li>{@code providers}：上游服务定义（llama.cpp / ComfyUI / 云端）。</li>
  *   <li>{@code routes}：请求模型名到上游服务的路由映射。</li>
  *   <li>{@code runtimes}：每个模型运行时的健康检查与启停命令（供 admin 接口使用）。</li>
  * </ul>
@@ -87,6 +87,7 @@ public class GatewayProperties {
         private String publicBaseUrl = "http://127.0.0.1:8088";
         private long pollIntervalMillis = 2000;
         private long generationTimeoutMillis = 600000;
+        private long videoGenerationTimeoutMillis = 1800000;
         private int maxConcurrentGenerations = 1;
 
         public String getResultsDirectory() { return resultsDirectory; }
@@ -97,6 +98,8 @@ public class GatewayProperties {
         public void setPollIntervalMillis(long value) { this.pollIntervalMillis = value; }
         public long getGenerationTimeoutMillis() { return generationTimeoutMillis; }
         public void setGenerationTimeoutMillis(long value) { this.generationTimeoutMillis = value; }
+        public long getVideoGenerationTimeoutMillis() { return videoGenerationTimeoutMillis; }
+        public void setVideoGenerationTimeoutMillis(long value) { this.videoGenerationTimeoutMillis = value; }
         public int getMaxConcurrentGenerations() { return maxConcurrentGenerations; }
         public void setMaxConcurrentGenerations(int value) { this.maxConcurrentGenerations = value; }
     }

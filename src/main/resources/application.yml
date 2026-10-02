@@ -23,6 +23,7 @@ tenx:
         public-base-url: ${TENX_IMAGE_PUBLIC_BASE_URL:http://127.0.0.1:8088}
         poll-interval-millis: ${TENX_COMFYUI_POLL_INTERVAL_MILLIS:2000}
         generation-timeout-millis: ${TENX_COMFYUI_GENERATION_TIMEOUT_MILLIS:600000}
+        video-generation-timeout-millis: ${TENX_COMFYUI_VIDEO_GENERATION_TIMEOUT_MILLIS:1800000}
         max-concurrent-generations: ${TENX_COMFYUI_MAX_CONCURRENT_GENERATIONS:1}
       providers:
         local-compatible:
@@ -35,11 +36,10 @@ tenx:
           response-timeout-millis: ${TENX_COMFYUI_RESPONSE_TIMEOUT_MILLIS:600000}
           read-timeout-millis: ${TENX_COMFYUI_READ_TIMEOUT_MILLIS:600000}
         video-compatible:
-          type: openai-video-compatible
-          base-url: ${TENX_VIDEO_OPENAI_BASE_URL:http://127.0.0.1:4020}
-          api-key: ${TENX_VIDEO_OPENAI_API_KEY:}
-          response-timeout-millis: ${TENX_VIDEO_OPENAI_RESPONSE_TIMEOUT_MILLIS:1800000}
-          read-timeout-millis: ${TENX_VIDEO_OPENAI_READ_TIMEOUT_MILLIS:1800000}
+          type: comfyui-video
+          base-url: ${TENX_COMFYUI_BASE_URL:http://127.0.0.1:8188}
+          response-timeout-millis: ${TENX_COMFYUI_VIDEO_RESPONSE_TIMEOUT_MILLIS:1800000}
+          read-timeout-millis: ${TENX_COMFYUI_VIDEO_READ_TIMEOUT_MILLIS:1800000}
         cloud-openai:
           type: openai-compatible
           base-url: ${TENX_CLOUD_OPENAI_BASE_URL:https://api.openai.com}
@@ -110,12 +110,12 @@ tenx:
           stop-command: ${TENX_RUNTIME_FLUX_DEV_STOP_COMMAND:/Users/lijunwei/ai-scripts/stop-image-model.sh}
           resource-check-command: ${TENX_RUNTIME_FLUX_DEV_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep -E 'ComfyUI|image-adapter' | grep -v grep || true}
         "[HunyuanVideo-1.5]":
-          health-url: ${TENX_RUNTIME_HUNYUANVIDEO_1_5_HEALTH_URL:http://127.0.0.1:4020/health}
+          health-url: ${TENX_RUNTIME_HUNYUANVIDEO_1_5_HEALTH_URL:http://host.docker.internal:8188/system_stats}
           start-command: ${TENX_RUNTIME_HUNYUANVIDEO_1_5_START_COMMAND:/Users/lijunwei/ai-scripts/start-hunyuanvideo-1.5.sh}
           stop-command: ${TENX_RUNTIME_HUNYUANVIDEO_1_5_STOP_COMMAND:/Users/lijunwei/ai-scripts/stop-video-model.sh}
-          resource-check-command: ${TENX_RUNTIME_HUNYUANVIDEO_1_5_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep -E 'ComfyUI|video-adapter' | grep -v grep || true}
+          resource-check-command: ${TENX_RUNTIME_HUNYUANVIDEO_1_5_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep ComfyUI | grep -v grep || true}
         "[Wan2.2-TI2V-5B]":
-          health-url: ${TENX_RUNTIME_WAN2_2_TI2V_5B_HEALTH_URL:http://127.0.0.1:4020/health}
+          health-url: ${TENX_RUNTIME_WAN2_2_TI2V_5B_HEALTH_URL:http://host.docker.internal:8188/system_stats}
           start-command: ${TENX_RUNTIME_WAN2_2_TI2V_5B_START_COMMAND:/Users/lijunwei/ai-scripts/start-wan2.2-ti2v-5b.sh}
           stop-command: ${TENX_RUNTIME_WAN2_2_TI2V_5B_STOP_COMMAND:/Users/lijunwei/ai-scripts/stop-video-model.sh}
-          resource-check-command: ${TENX_RUNTIME_WAN2_2_TI2V_5B_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep -E 'ComfyUI|video-adapter' | grep -v grep || true}
+          resource-check-command: ${TENX_RUNTIME_WAN2_2_TI2V_5B_RESOURCE_CHECK_COMMAND:ps -axo pid,rss,command | grep ComfyUI | grep -v grep || true}

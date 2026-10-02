@@ -37,8 +37,8 @@ public class VideoControllerTest {
         GatewayProperties properties = new GatewayProperties();
 
         GatewayProperties.ProviderConfig video = new GatewayProperties.ProviderConfig();
-        video.setType("openai-video-compatible");
-        video.setBaseUrl("http://127.0.0.1:4020");
+        video.setType("comfyui-video");
+        video.setBaseUrl("http://127.0.0.1:8188");
         properties.getProviders().put("video-compatible", video);
 
         GatewayProperties.RouteConfig route = new GatewayProperties.RouteConfig();
@@ -55,7 +55,7 @@ public class VideoControllerTest {
     private static class StubVideoProvider implements VideoProvider {
         @Override
         public boolean supports(String providerType) {
-            return "openai-video-compatible".equals(providerType);
+            return "comfyui-video".equals(providerType);
         }
 
         @Override

@@ -16,8 +16,7 @@ import reactor.core.publisher.Mono;
 /**
  * OpenAI 兼容的视频生成入口，处理 {@code /v1/videos/generations}。
  *
- * <p>流程：解析路由 → 校验 capability 为 video → 解析并校验时长 → 转发给对应 provider。
- * 网关本身不生成视频，也不保存视频文件。
+ * <p>流程：解析路由 → 校验 capability 为 video → 解析并校验时长 → 交给对应 provider。
  */
 @RestController
 public class VideoController {

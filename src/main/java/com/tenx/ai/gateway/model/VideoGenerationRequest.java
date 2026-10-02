@@ -24,8 +24,8 @@ public class VideoGenerationRequest {
     /** 视频时长（秒），可为空，为空时用路由默认值。 */
     private Integer duration;
 
-    /** 视频尺寸，默认 1280x720。 */
-    private String size = "1280x720";
+    /** 视频尺寸；未指定时由各模型工作流选择合适默认值。 */
+    private String size;
 
     /** 未显式声明的其它字段，透传给上游。 */
     private Map<String, JsonNode> extra = new LinkedHashMap<String, JsonNode>();

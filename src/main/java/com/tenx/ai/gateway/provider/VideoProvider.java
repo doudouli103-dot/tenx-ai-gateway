@@ -6,7 +6,7 @@ import com.tenx.ai.gateway.model.VideoGenerationRequest;
 import reactor.core.publisher.Mono;
 
 /**
- * 视频生成 provider 的统一接口。网关只转发，不生成、不保存视频。
+ * 视频生成 provider 的统一接口。
  */
 public interface VideoProvider {
 

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 /**
- * OpenAI 兼容的视频 provider，把请求转发到上游的 {@code /v1/videos/generations}（如 video-adapter）。
+ * Optional OpenAI-compatible video provider for an explicitly configured external service.
  */
 @Component
 public class OpenAiCompatibleVideoProvider implements VideoProvider {

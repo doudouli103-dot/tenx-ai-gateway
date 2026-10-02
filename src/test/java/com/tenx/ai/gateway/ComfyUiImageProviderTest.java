@@ -7,6 +7,7 @@ import com.tenx.ai.gateway.config.GatewayProperties;
 import com.tenx.ai.gateway.config.WebClientConfig;
 import com.tenx.ai.gateway.model.ImageGenerationRequest;
 import com.tenx.ai.gateway.provider.ComfyUiImageProvider;
+import com.tenx.ai.gateway.provider.ComfyUiGenerationLimiter;
 import com.tenx.ai.gateway.provider.ComfyUiWorkflowFactory;
 import com.tenx.ai.gateway.provider.ProviderWebClientFactory;
 import java.net.InetSocketAddress;
@@ -76,7 +77,8 @@ public class ComfyUiImageProviderTest {
         ExchangeStrategies strategies = config.exchangeStrategies(properties);
         ProviderWebClientFactory clients = new ProviderWebClientFactory(properties, pool, strategies);
         ComfyUiImageProvider provider = new ComfyUiImageProvider(
-                clients, new ComfyUiWorkflowFactory(mapper), properties, mapper);
+                clients, new ComfyUiWorkflowFactory(mapper), properties, mapper,
+                new ComfyUiGenerationLimiter(properties));
 
         ImageGenerationRequest request = new ImageGenerationRequest();
         request.setModel("qwen-image");
