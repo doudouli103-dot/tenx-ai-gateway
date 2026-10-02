@@ -365,7 +365,8 @@ Local models
 Build and start:
 
 ```bash
-cd /Users/junweili1992163.com/ljwStudy/study-ai/tenx-ai-gateway
+cd /Users/lijunwei/study-ai/tenx-ai-gateway
+nano .env
 docker compose up -d --build
 ```
 
@@ -411,21 +412,18 @@ Use a Compose service name when the backend model service is in the same `docker
 TENX_LOCAL_OPENAI_BASE_URL=http://litellm:4000
 ```
 
-To override settings without editing `docker-compose.yml`, create a local `.env` file next to it:
+To override settings without editing `docker-compose.yml`, create and edit a local `.env` file:
 
 ```bash
-TENX_AI_GATEWAY_API_KEYS=local-dev-key,github-agent-key,zcode-key
-TENX_LOCAL_OPENAI_BASE_URL=http://host.docker.internal:4000
-TENX_LOCAL_OPENAI_API_KEY=
-TENX_IMAGE_OPENAI_BASE_URL=http://host.docker.internal:4010
-TENX_IMAGE_OPENAI_API_KEY=
-TENX_VIDEO_OPENAI_BASE_URL=http://host.docker.internal:4020
-TENX_VIDEO_OPENAI_API_KEY=
-TENX_CLOUD_OPENAI_BASE_URL=https://api.openai.com
-TENX_CLOUD_OPENAI_API_KEY=
+nano .env
 ```
 
-Do not commit `.env`. It is already ignored by `.gitignore` and `.dockerignore`.
+`.env` contains machine-specific values and real API keys; it is ignored by `.gitignore` and `.dockerignore` and must
+not be committed. After changing `.env`, recreate the container so the new environment is applied:
+
+```bash
+docker compose up -d --force-recreate
+```
 
 After startup, clients should use:
 
