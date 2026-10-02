@@ -203,7 +203,9 @@ caffeinate -dimsu \
 python main.py \
   --listen 0.0.0.0 \
   --port 8188 \
-  --reserve-vram 8
+  --reserve-vram 8 \
+  --input-directory /Volumes/LJW/tenx-ai/comfyui/input \
+  --output-directory /Volumes/LJW/tenx-ai/comfyui/output
 ```
 
 也可以不激活环境，直接使用 `conda run`：
@@ -217,8 +219,22 @@ conda run --no-capture-output -n comfyui \
   python main.py \
   --listen 0.0.0.0 \
   --port 8188 \
-  --reserve-vram 8
+  --reserve-vram 8 \
+  --input-directory /Volumes/LJW/tenx-ai/comfyui/input \
+  --output-directory /Volumes/LJW/tenx-ai/comfyui/output
 ```
+
+以上命令将上传的输入素材和工作流直接生成的结果保存到外接 HDD。启动前确保 `/Volumes/LJW` 已挂载，并提前创建相关目录：
+
+```bash
+mkdir -p \
+  /Volumes/LJW/tenx-ai/comfyui/input \
+  /Volumes/LJW/tenx-ai/comfyui/output \
+  /Volumes/LJW/tenx-ai/comfyui/adapter-results \
+  /Volumes/LJW/tenx-ai/comfyui/archive
+```
+
+`adapter-results` 供 adapter 或客户端下载结果使用，`archive` 用于长期存档；两者不是 ComfyUI 原生命令行参数。
 
 访问路径：
 
