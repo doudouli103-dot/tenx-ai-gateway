@@ -1,5 +1,7 @@
 package com.tenx.ai.gateway.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -26,6 +28,23 @@ public class VideoGenerationRequest {
 
     /** 视频尺寸；未指定时由各模型工作流选择合适默认值。 */
     private String size;
+
+    /** Optional short-drama project identifier supplied by the orchestration layer. */
+    @JsonProperty("project_id")
+    private String projectId;
+
+    /** Optional scene identifier supplied by the orchestration layer. */
+    @JsonProperty("scene_id")
+    private String sceneId;
+
+    /** Optional shot identifier supplied by the orchestration layer. */
+    @JsonProperty("shot_id")
+    private String shotId;
+
+    /** Existing generated image used as the first frame. */
+    @JsonProperty("start_image_result_id")
+    @JsonAlias("input_image_result_id")
+    private String startImageResultId;
 
     /** 未显式声明的其它字段，透传给上游。 */
     private Map<String, JsonNode> extra = new LinkedHashMap<String, JsonNode>();
@@ -70,6 +89,15 @@ public class VideoGenerationRequest {
         this.size = size;
     }
 
+    public String getProjectId() { return projectId; }
+    public void setProjectId(String value) { this.projectId = value; }
+    public String getSceneId() { return sceneId; }
+    public void setSceneId(String value) { this.sceneId = value; }
+    public String getShotId() { return shotId; }
+    public void setShotId(String value) { this.shotId = value; }
+    public String getStartImageResultId() { return startImageResultId; }
+    public void setStartImageResultId(String value) { this.startImageResultId = value; }
+
     /** 返回所有透传的扩展字段。 */
     @JsonAnyGetter
     public Map<String, JsonNode> getExtra() {
@@ -89,6 +117,10 @@ public class VideoGenerationRequest {
         copy.setPrompt(prompt);
         copy.setDuration(resolvedDuration);
         copy.setSize(size);
+        copy.setProjectId(projectId);
+        copy.setSceneId(sceneId);
+        copy.setShotId(shotId);
+        copy.setStartImageResultId(startImageResultId);
         copy.getExtra().putAll(extra);
         return copy;
     }

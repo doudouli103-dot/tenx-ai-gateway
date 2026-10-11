@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,18 @@ public class ComfyUiVideoProviderTest {
     public void returnsFrameManifestForSavedFrames() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         AtomicReference<JsonNode> workflow = new AtomicReference<JsonNode>();
+        AtomicInteger uploads = new AtomicInteger();
+        String referenceId = "tenx_0123456789abcdef0123456789abcdef_00001_";
+        Path imageDirectory = output.resolve("tenx");
+        Files.createDirectories(imageDirectory);
+        Files.write(imageDirectory.resolve(referenceId + ".png"), new byte[] {1, 2, 3});
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/upload/image", exchange -> {
+            uploads.incrementAndGet();
+            while (exchange.getRequestBody().read() != -1) { }
+            respond(exchange, "{\"name\":\"" + referenceId
+                    + ".png\",\"subfolder\":\"tenx-reference\",\"type\":\"input\"}");
+        });
         server.createContext("/prompt", exchange -> {
             workflow.set(mapper.readTree(exchange.getRequestBody()).path("prompt"));
             respond(exchange, "{\"prompt_id\":\"video-prompt\"}");
@@ -75,6 +87,10 @@ public class ComfyUiVideoProviderTest {
         request.setModel("Wan2.2-TI2V-5B");
         request.setPrompt("robot walking");
         request.setDuration(1);
+        request.setProjectId("drama-01");
+        request.setSceneId("scene-01");
+        request.setShotId("shot-001");
+        request.setStartImageResultId(referenceId);
         JsonNode response = provider.generate(request, upstream).block();
 
         Assertions.assertEquals("robot walking", workflow.get().path("4").path("inputs").path("text").asText());
@@ -86,6 +102,11 @@ public class ComfyUiVideoProviderTest {
         Assertions.assertEquals(352, workflow.get().path("6").path("inputs").path("height").asInt());
         Assertions.assertEquals(25, workflow.get().path("6").path("inputs").path("length").asInt());
         Assertions.assertEquals(14, workflow.get().path("8").path("inputs").path("steps").asInt());
+        Assertions.assertEquals(1, uploads.get());
+        Assertions.assertEquals("LoadImage", workflow.get().path("12").path("class_type").asText());
+        Assertions.assertEquals("tenx-reference/" + referenceId + ".png",
+                workflow.get().path("12").path("inputs").path("image").asText());
+        Assertions.assertEquals("12", workflow.get().path("6").path("inputs").path("start_image").get(0).asText());
         Assertions.assertEquals("euler", workflow.get().path("8").path("inputs").path("sampler_name").asText());
         String resultId = response.path("result_id").asText();
         Assertions.assertTrue(Files.isDirectory(output.resolve("tenx-video-frames").resolve(resultId)));
@@ -99,6 +120,12 @@ public class ComfyUiVideoProviderTest {
                 response.path("frames_base_url").asText());
         Assertions.assertEquals("frame_00001_.png", response.path("frame_files").get(0).asText());
         Assertions.assertEquals("640x352", response.path("size").asText());
+        Assertions.assertEquals("drama-01", response.path("project_id").asText());
+        Assertions.assertEquals("scene-01", response.path("scene_id").asText());
+        Assertions.assertEquals("shot-001", response.path("shot_id").asText());
+        Assertions.assertEquals("start_frame", response.path("reference_mode").asText());
+        Assertions.assertEquals("short-drama-v1", response.path("workflow_version").asText());
+        Assertions.assertEquals(14, response.path("steps").asInt());
         Assertions.assertFalse(response.has("url"));
         Assertions.assertFalse(response.toString().contains("b64_json"));
     }

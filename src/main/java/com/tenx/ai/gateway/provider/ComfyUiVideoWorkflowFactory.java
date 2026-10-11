@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class ComfyUiVideoWorkflowFactory {
 
+    public static final String WORKFLOW_VERSION = "short-drama-v1";
+
     private final ObjectMapper mapper;
     private final SecureRandom random = new SecureRandom();
 
@@ -20,6 +22,11 @@ public class ComfyUiVideoWorkflowFactory {
     }
 
     public ObjectNode create(VideoGenerationRequest request, String resultPrefix) {
+        return create(request, resultPrefix, null);
+    }
+
+    public ObjectNode create(VideoGenerationRequest request, String resultPrefix,
+                             String startImageName) {
         boolean hunyuan = "HunyuanVideo-1.5".equals(request.getModel());
         if (!hunyuan && !"Wan2.2-TI2V-5B".equals(request.getModel())) {
             throw new IllegalArgumentException("Unsupported ComfyUI video model: " + request.getModel());
@@ -29,6 +36,12 @@ public class ComfyUiVideoWorkflowFactory {
         }
         if (request.getDuration() == null || request.getDuration() < 1 || request.getDuration() > 5) {
             throw new IllegalArgumentException("duration must be from 1 to 5 seconds");
+        }
+        validateIdentifier("project_id", request.getProjectId());
+        validateIdentifier("scene_id", request.getSceneId());
+        validateIdentifier("shot_id", request.getShotId());
+        if (hunyuan && startImageName != null) {
+            throw new IllegalArgumentException("Reference frames are currently supported only by Wan2.2-TI2V-5B");
         }
         String size = request.getSize() == null ? "640x352" : request.getSize();
         if (!size.matches("[0-9]{2,4}x[0-9]{2,4}")) {
@@ -85,6 +98,10 @@ public class ComfyUiVideoWorkflowFactory {
             node(workflow, "3", "VAELoader", "vae_name", "wan2.2_vae.safetensors");
             node(workflow, "6", "Wan22ImageToVideoLatent", "vae", link("3", 0), "width", width,
                     "height", height, "length", frames, "batch_size", 1);
+            if (startImageName != null) {
+                node(workflow, "12", "LoadImage", "image", startImageName);
+                ((ObjectNode) workflow.path("6").path("inputs")).set("start_image", mapper.valueToTree(link("12", 0)));
+            }
         }
         node(workflow, "4", "CLIPTextEncode", "clip", link("1", 0), "text", request.getPrompt());
         node(workflow, "5", "CLIPTextEncode", "clip", link("1", 0), "text", negative);
@@ -97,6 +114,12 @@ public class ComfyUiVideoWorkflowFactory {
         node(workflow, "11", "SaveImage", "images", link("9", 0),
                 "filename_prefix", "tenx-video-frames/" + resultPrefix + "/frame");
         return workflow;
+    }
+
+    private void validateIdentifier(String name, String value) {
+        if (value != null && !value.isEmpty() && !value.matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}")) {
+            throw new IllegalArgumentException(name + " must use 1-64 letters, numbers, dots, underscores or hyphens");
+        }
     }
 
     private ObjectNode node(ObjectNode workflow, String id, String type, Object... pairs) {

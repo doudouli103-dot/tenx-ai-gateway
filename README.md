@@ -984,7 +984,13 @@ curl -s http://127.0.0.1:8088/v1/videos/generations \
     "model": "Wan2.2-TI2V-5B",
     "prompt": "一个科技感视频",
     "duration": 1,
-    "size": "640x352"
+    "size": "640x352",
+    "project_id": "drama-001",
+    "scene_id": "scene-001",
+    "shot_id": "shot-001",
+    "start_image_result_id": "tenx_0123456789abcdef0123456789abcdef_00001_",
+    "seed": 123456,
+    "steps": 14
   }'
 ```
 
@@ -1000,6 +1006,13 @@ The Gateway waits for ComfyUI to save all PNG frames and returns a Windows-consu
   "output_type": "image_sequence",
   "fps": 24,
   "frame_count": 25,
+  "seed": 123456,
+  "steps": 14,
+  "workflow_version": "short-drama-v1",
+  "reference_mode": "start_frame",
+  "project_id": "drama-001",
+  "scene_id": "scene-001",
+  "shot_id": "shot-001",
   "frame_pattern": "frame_%05d_.png",
   "frames_relative_path": "tenx-video-frames/tenx_0123456789abcdef0123456789abcdef",
   "frames_base_url": "http://macstudio.tentest.cn:8088/v1/videos/results/tenx_0123456789abcdef0123456789abcdef/frames",
@@ -1024,6 +1037,8 @@ ffmpeg -framerate 24 -start_number 1 `
 ```
 
 Frames are saved under `/Volumes/LJW/tenx-ai/comfyui/output/tenx-video-frames/<resultId>` and are not deleted automatically. Both local video routes default to `640x352`, one second, 14 sampling steps, Euler sampling, and 24 fps. Requests may explicitly select 1–5 seconds, a valid model size, optional `seed`, `steps` (1–30), and `negative_prompt`. The endpoint waits synchronously until all frames exist. `tenx-ai-media-service` on Windows should download the authenticated frames, perform FFmpeg encoding, and own the final MP4 URL. The legacy `/v1/videos/results/{resultId}/content` endpoint remains only for MP4 files generated before frame mode was enabled.
+
+For short-drama shots, `project_id`, `scene_id`, and `shot_id` are optional trace identifiers. `Wan2.2-TI2V-5B` also accepts `start_image_result_id` (or the compatibility alias `input_image_result_id`) referencing an existing Gateway-generated PNG. The Gateway validates that identifier, reads only from `output/tenx`, uploads the PNG into ComfyUI's `tenx-reference` input subfolder, and connects it to `Wan22ImageToVideoLatent.start_image`. The installed node exposes no `end_image` input, so end-frame conditioning is intentionally not accepted. HunyuanVideo remains text-to-video only.
 
 ## Use With Open WebUI Docker
 

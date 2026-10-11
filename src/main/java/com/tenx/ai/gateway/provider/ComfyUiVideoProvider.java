@@ -19,9 +19,13 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Flux;
@@ -31,6 +35,8 @@ import reactor.core.scheduler.Schedulers;
 /** Submits text-to-frame jobs to ComfyUI for final video encoding on Windows. */
 @Component
 public class ComfyUiVideoProvider implements VideoProvider {
+
+    private static final Pattern IMAGE_RESULT_ID = Pattern.compile("tenx_[0-9a-f]{32}_[0-9]{5}_");
 
     private final ProviderWebClientFactory clients;
     private final ComfyUiVideoWorkflowFactory workflows;
@@ -72,23 +78,28 @@ public class ComfyUiVideoProvider implements VideoProvider {
                     "ComfyUI output disk is unavailable", MediaType.TEXT_PLAIN));
         }
         String runId = UUID.randomUUID().toString().replace("-", "");
-        ObjectNode workflow = workflows.create(request, "tenx_" + runId);
-        ObjectNode body = mapper.createObjectNode();
-        body.set("prompt", workflow);
         WebClient client = clients.client(provider);
-        return client.post().uri("/prompt")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(body)
-                .retrieve()
-                .onStatus(HttpStatus::isError, UpstreamProviderException::fromResponse)
-                .bodyToMono(JsonNode.class)
-                .flatMap(submitted -> {
-                    String promptId = submitted.path("prompt_id").asText(null);
-                    if (promptId == null || promptId.isEmpty()) {
-                        return Mono.error(new UpstreamProviderException(HttpStatus.BAD_GATEWAY,
-                                "ComfyUI did not return prompt_id: " + submitted, MediaType.TEXT_PLAIN));
-                    }
-                    return waitForResult(client, promptId, runId, request, config);
+        return uploadReferences(client, request, output)
+                .flatMap(references -> {
+                    ObjectNode workflow = workflows.create(request, "tenx_" + runId,
+                            references.startImage);
+                    ObjectNode body = mapper.createObjectNode();
+                    body.set("prompt", workflow);
+                    return client.post().uri("/prompt")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(body)
+                            .retrieve()
+                            .onStatus(HttpStatus::isError, UpstreamProviderException::fromResponse)
+                            .bodyToMono(JsonNode.class)
+                            .flatMap(submitted -> {
+                                String promptId = submitted.path("prompt_id").asText(null);
+                                if (promptId == null || promptId.isEmpty()) {
+                                    return Mono.error(new UpstreamProviderException(HttpStatus.BAD_GATEWAY,
+                                            "ComfyUI did not return prompt_id: " + submitted,
+                                            MediaType.TEXT_PLAIN));
+                                }
+                                return waitForResult(client, promptId, runId, request, config, workflow);
+                            });
                 })
                 .onErrorMap(TimeoutException.class, error -> new UpstreamProviderException(
                         HttpStatus.GATEWAY_TIMEOUT, "ComfyUI video generation timed out", MediaType.TEXT_PLAIN))
@@ -96,8 +107,71 @@ public class ComfyUiVideoProvider implements VideoProvider {
                         HttpStatus.BAD_GATEWAY, "Cannot reach ComfyUI", MediaType.TEXT_PLAIN));
     }
 
+    private Mono<ReferenceImages> uploadReferences(WebClient client, VideoGenerationRequest request, Path output) {
+        return uploadReference(client, output, request.getStartImageResultId())
+                .map(start -> new ReferenceImages(emptyToNull(start)));
+    }
+
+    private Mono<String> uploadReference(WebClient client, Path output, String resultId) {
+        if (resultId == null || resultId.trim().isEmpty()) {
+            return Mono.just("");
+        }
+        return Mono.fromCallable(() -> resolveReferenceImage(output, resultId.trim()))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(file -> {
+                    MultipartBodyBuilder multipart = new MultipartBodyBuilder();
+                    multipart.part("image", new FileSystemResource(file));
+                    multipart.part("subfolder", "tenx-reference");
+                    multipart.part("type", "input");
+                    multipart.part("overwrite", "true");
+                    return client.post().uri("/upload/image")
+                            .contentType(MediaType.MULTIPART_FORM_DATA)
+                            .body(BodyInserters.fromMultipartData(multipart.build()))
+                            .retrieve()
+                            .onStatus(HttpStatus::isError, UpstreamProviderException::fromResponse)
+                            .bodyToMono(JsonNode.class)
+                            .map(response -> uploadedImageName(response, file.getFileName().toString()));
+                });
+    }
+
+    private Path resolveReferenceImage(Path output, String resultId) throws java.io.IOException {
+        if (!IMAGE_RESULT_ID.matcher(resultId).matches()) {
+            throw new IllegalArgumentException("Reference image result ID is invalid");
+        }
+        Path root = output.toAbsolutePath().normalize();
+        Path imageRoot = root.resolve("tenx").normalize();
+        Path file = imageRoot.resolve(resultId + ".png").normalize();
+        if (!file.startsWith(imageRoot)
+                || !Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)
+                || !Files.isReadable(file)) {
+            throw new IllegalArgumentException("Reference image result is unavailable: " + resultId);
+        }
+        Path realImageRoot = imageRoot.toRealPath();
+        Path realFile = file.toRealPath();
+        if (!realFile.startsWith(realImageRoot)) {
+            throw new IllegalArgumentException("Reference image escapes the ComfyUI result directory");
+        }
+        return realFile;
+    }
+
+    private String uploadedImageName(JsonNode response, String expectedName) {
+        String name = response.path("name").asText("");
+        String subfolder = response.path("subfolder").asText("");
+        String type = response.path("type").asText("");
+        if (!expectedName.equals(name) || !"tenx-reference".equals(subfolder) || !"input".equals(type)) {
+            throw new UpstreamProviderException(HttpStatus.BAD_GATEWAY,
+                    "ComfyUI returned an unexpected reference-image upload response", MediaType.TEXT_PLAIN);
+        }
+        return subfolder + "/" + name;
+    }
+
+    private String emptyToNull(String value) {
+        return value == null || value.isEmpty() ? null : value;
+    }
+
     private Mono<JsonNode> waitForResult(WebClient client, String promptId, String runId,
-                                          VideoGenerationRequest request, GatewayProperties.ComfyUiConfig config) {
+                                          VideoGenerationRequest request, GatewayProperties.ComfyUiConfig config,
+                                          ObjectNode workflow) {
         long interval = Math.max(250, config.getPollIntervalMillis());
         return Flux.interval(Duration.ZERO, Duration.ofMillis(interval))
                 .concatMap(tick -> client.get().uri("/history/{id}", promptId)
@@ -116,12 +190,12 @@ public class ComfyUiVideoProvider implements VideoProvider {
                 })
                 .next()
                 .timeout(Duration.ofMillis(config.getVideoGenerationTimeoutMillis()))
-                .flatMap(entry -> Mono.fromCallable(() -> buildResponse(entry, runId, request, config))
+                .flatMap(entry -> Mono.fromCallable(() -> buildResponse(entry, runId, request, config, workflow))
                         .subscribeOn(Schedulers.boundedElastic()));
     }
 
     private JsonNode buildResponse(JsonNode entry, String runId, VideoGenerationRequest request,
-                                   GatewayProperties.ComfyUiConfig config) {
+                                   GatewayProperties.ComfyUiConfig config, ObjectNode workflow) {
         JsonNode files = entry.path("outputs").path("11").path("images");
         int expectedFrameCount = request.getDuration() * 24 + 1;
         if (!files.isArray() || files.size() != expectedFrameCount) {
@@ -180,7 +254,33 @@ public class ComfyUiVideoProvider implements VideoProvider {
         response.put("frames_relative_path", subfolder);
         response.put("frames_base_url", config.getPublicBaseUrl().replaceAll("/+$", "")
                 + "/v1/videos/results/" + resultId + "/frames");
+        response.put("seed", workflow.path("8").path("inputs").path("seed").asLong());
+        response.put("steps", workflow.path("8").path("inputs").path("steps").asInt());
+        response.put("workflow_version", ComfyUiVideoWorkflowFactory.WORKFLOW_VERSION);
+        response.put("reference_mode", hasText(request.getStartImageResultId()) ? "start_frame" : "text_to_video");
+        putIfPresent(response, "project_id", request.getProjectId());
+        putIfPresent(response, "scene_id", request.getSceneId());
+        putIfPresent(response, "shot_id", request.getShotId());
+        putIfPresent(response, "start_image_result_id", request.getStartImageResultId());
         response.set("frame_files", mapper.valueToTree(frameNames));
         return response;
+    }
+
+    private void putIfPresent(ObjectNode response, String field, String value) {
+        if (value != null && !value.trim().isEmpty()) {
+            response.put(field, value.trim());
+        }
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    private static class ReferenceImages {
+        private final String startImage;
+
+        private ReferenceImages(String startImage) {
+            this.startImage = startImage;
+        }
     }
 }
