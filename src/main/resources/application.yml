@@ -75,13 +75,13 @@ tenx:
           capability: video
           provider: video-compatible
           model: HunyuanVideo-1.5
-          default-duration-seconds: 5
+          default-duration-seconds: 1
           max-duration-seconds: 5
         "[Wan2.2-TI2V-5B]":
           capability: video
           provider: video-compatible
           model: Wan2.2-TI2V-5B
-          default-duration-seconds: 5
+          default-duration-seconds: 1
           max-duration-seconds: 5
       runtimes:
         qwen-small:

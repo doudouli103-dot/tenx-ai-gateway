@@ -47,7 +47,7 @@ public class VideoController {
     }
 
     /**
-     * 解析视频时长：请求未传则用路由默认值，仍为空则用 5 秒；
+     * 解析视频时长：请求未传则用路由默认值，仍为空则用低负载默认值 1 秒；
      * 超过路由配置的最大时长则拒绝请求。
      */
     private Integer resolveDuration(VideoGenerationRequest request, ModelRoute route) {
@@ -56,7 +56,7 @@ public class VideoController {
             duration = route.getDefaultDurationSeconds();
         }
         if (duration == null) {
-            duration = Integer.valueOf(5);
+            duration = Integer.valueOf(1);
         }
 
         Integer maxDuration = route.getMaxDurationSeconds();

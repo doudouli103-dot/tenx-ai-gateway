@@ -34,7 +34,7 @@ public class ComfyUiVideoProviderTest {
     }
 
     @Test
-    public void returnsGatewayUrlForSavedVideo() throws Exception {
+    public void returnsFrameManifestForSavedFrames() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         AtomicReference<JsonNode> workflow = new AtomicReference<JsonNode>();
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -44,13 +44,19 @@ public class ComfyUiVideoProviderTest {
         });
         server.createContext("/history/video-prompt", exchange -> {
             String prefix = workflow.get().path("11").path("inputs").path("filename_prefix").asText();
-            String filename = prefix.substring("tenx-video/".length()) + "_00001_.mp4";
-            Path file = output.resolve("tenx-video").resolve(filename);
-            Files.createDirectories(file.getParent());
-            Files.write(file, new byte[] {0, 0, 0, 1});
+            String subfolder = prefix.substring(0, prefix.lastIndexOf('/'));
+            Path directory = output.resolve(subfolder);
+            Files.createDirectories(directory);
+            int frameCount = workflow.get().path("6").path("inputs").path("length").asInt();
+            StringBuilder frames = new StringBuilder();
+            for (int index = frameCount; index >= 1; index--) {
+                String filename = String.format("frame_%05d_.png", index);
+                Files.write(directory.resolve(filename), new byte[] {(byte) index});
+                if (frames.length() > 0) frames.append(',');
+                frames.append(frameJson(filename, subfolder));
+            }
             respond(exchange, "{\"video-prompt\":{\"status\":{\"completed\":true,\"status_str\":\"success\"},"
-                    + "\"outputs\":{\"11\":{\"images\":[{\"filename\":\"" + filename
-                    + "\",\"subfolder\":\"tenx-video\",\"type\":\"output\"}]}}}}");
+                    + "\"outputs\":{\"11\":{\"images\":[" + frames + "]}}}}");
         });
         server.start();
 
@@ -68,17 +74,32 @@ public class ComfyUiVideoProviderTest {
         VideoGenerationRequest request = new VideoGenerationRequest();
         request.setModel("Wan2.2-TI2V-5B");
         request.setPrompt("robot walking");
-        request.setDuration(5);
+        request.setDuration(1);
         JsonNode response = provider.generate(request, upstream).block();
 
         Assertions.assertEquals("robot walking", workflow.get().path("4").path("inputs").path("text").asText());
-        Assertions.assertEquals(704, workflow.get().path("6").path("inputs").path("height").asInt());
-        Assertions.assertEquals(121, workflow.get().path("6").path("inputs").path("length").asInt());
+        Assertions.assertEquals("SaveImage", workflow.get().path("11").path("class_type").asText());
+        Assertions.assertTrue(workflow.get().path("10").isMissingNode());
+        Assertions.assertEquals("umt5_xxl_fp16.safetensors",
+                workflow.get().path("1").path("inputs").path("clip_name").asText());
+        Assertions.assertEquals(640, workflow.get().path("6").path("inputs").path("width").asInt());
+        Assertions.assertEquals(352, workflow.get().path("6").path("inputs").path("height").asInt());
+        Assertions.assertEquals(25, workflow.get().path("6").path("inputs").path("length").asInt());
+        Assertions.assertEquals(14, workflow.get().path("8").path("inputs").path("steps").asInt());
+        Assertions.assertEquals("euler", workflow.get().path("8").path("inputs").path("sampler_name").asText());
         String resultId = response.path("result_id").asText();
-        Assertions.assertTrue(Files.exists(output.resolve("tenx-video").resolve(resultId + ".mp4")));
-        Assertions.assertEquals("http://example.test:8088/v1/videos/results/" + resultId + "/content",
-                response.path("url").asText());
-        Assertions.assertEquals("1280x704", response.path("size").asText());
+        Assertions.assertTrue(Files.isDirectory(output.resolve("tenx-video-frames").resolve(resultId)));
+        Assertions.assertEquals("frames_ready", response.path("status").asText());
+        Assertions.assertEquals("image_sequence", response.path("output_type").asText());
+        Assertions.assertEquals(25, response.path("frame_count").asInt());
+        Assertions.assertEquals("frame_%05d_.png", response.path("frame_pattern").asText());
+        Assertions.assertEquals("tenx-video-frames/" + resultId,
+                response.path("frames_relative_path").asText());
+        Assertions.assertEquals("http://example.test:8088/v1/videos/results/" + resultId + "/frames",
+                response.path("frames_base_url").asText());
+        Assertions.assertEquals("frame_00001_.png", response.path("frame_files").get(0).asText());
+        Assertions.assertEquals("640x352", response.path("size").asText());
+        Assertions.assertFalse(response.has("url"));
         Assertions.assertFalse(response.toString().contains("b64_json"));
     }
 
@@ -91,7 +112,8 @@ public class ComfyUiVideoProviderTest {
         request.setDuration(5);
         JsonNode workflow = factory.create(request, "tenx_test");
         Assertions.assertEquals("hunyuan_video_15", workflow.path("1").path("inputs").path("type").asText());
-        Assertions.assertEquals(720, workflow.path("6").path("inputs").path("height").asInt());
+        Assertions.assertEquals(352, workflow.path("6").path("inputs").path("height").asInt());
+        Assertions.assertEquals("SaveImage", workflow.path("11").path("class_type").asText());
         request.setModel("Wan2.2-TI2V-5B");
         request.setSize("1280x720");
         Assertions.assertThrows(IllegalArgumentException.class, () -> factory.create(request, "tenx_test"));
@@ -103,5 +125,10 @@ public class ComfyUiVideoProviderTest {
         exchange.sendResponseHeaders(200, body.length);
         exchange.getResponseBody().write(body);
         exchange.close();
+    }
+
+    private static String frameJson(String filename, String subfolder) {
+        return "{\"filename\":\"" + filename + "\",\"subfolder\":\"" + subfolder
+                + "\",\"type\":\"output\"}";
     }
 }

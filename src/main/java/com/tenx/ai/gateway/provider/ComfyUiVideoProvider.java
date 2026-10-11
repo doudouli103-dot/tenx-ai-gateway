@@ -11,6 +11,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import org.springframework.http.HttpStatus;
@@ -22,7 +28,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-/** Submits text-to-video jobs directly to ComfyUI and returns a gateway download URL. */
+/** Submits text-to-frame jobs to ComfyUI for final video encoding on Windows. */
 @Component
 public class ComfyUiVideoProvider implements VideoProvider {
 
@@ -117,33 +123,64 @@ public class ComfyUiVideoProvider implements VideoProvider {
     private JsonNode buildResponse(JsonNode entry, String runId, VideoGenerationRequest request,
                                    GatewayProperties.ComfyUiConfig config) {
         JsonNode files = entry.path("outputs").path("11").path("images");
-        if (!files.isArray() || files.size() != 1) {
+        int expectedFrameCount = request.getDuration() * 24 + 1;
+        if (!files.isArray() || files.size() != expectedFrameCount) {
             throw new UpstreamProviderException(HttpStatus.BAD_GATEWAY,
-                    "ComfyUI completed without exactly one saved video", MediaType.TEXT_PLAIN);
+                    "ComfyUI completed without the expected number of video frames", MediaType.TEXT_PLAIN);
         }
-        JsonNode video = files.get(0);
-        String filename = video.path("filename").asText("");
-        if (!"output".equals(video.path("type").asText())
-                || !"tenx-video".equals(video.path("subfolder").asText())
-                || !filename.matches("^tenx_" + runId + "_[0-9]{5}_\\.mp4$")) {
+        String resultId = "tenx_" + runId;
+        String subfolder = "tenx-video-frames/" + resultId;
+        Path root = Paths.get(config.getResultsDirectory()).toAbsolutePath().normalize();
+        Path frameDirectory = root.resolve(subfolder).normalize();
+        if (!frameDirectory.startsWith(root)) {
             throw new UpstreamProviderException(HttpStatus.BAD_GATEWAY,
-                    "ComfyUI returned an unexpected video filename", MediaType.TEXT_PLAIN);
+                    "ComfyUI returned an invalid frame directory", MediaType.TEXT_PLAIN);
         }
-        Path file = Paths.get(config.getResultsDirectory()).resolve("tenx-video").resolve(filename);
-        if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS) || !Files.isReadable(file)) {
-            throw new UpstreamProviderException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Generated video is not available on the mounted output disk", MediaType.TEXT_PLAIN);
+
+        List<String> frameNames = new ArrayList<String>();
+        Set<String> uniqueNames = new HashSet<String>();
+        for (JsonNode frame : files) {
+            String filename = frame.path("filename").asText("");
+            if (!"output".equals(frame.path("type").asText())
+                    || !subfolder.equals(frame.path("subfolder").asText())
+                    || !filename.matches("^frame_[0-9]{5}_\\.png$")
+                    || !uniqueNames.add(filename)) {
+                throw new UpstreamProviderException(HttpStatus.BAD_GATEWAY,
+                        "ComfyUI returned an unexpected video frame", MediaType.TEXT_PLAIN);
+            }
+            Path file = frameDirectory.resolve(filename).normalize();
+            if (!file.startsWith(frameDirectory)
+                    || !Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)
+                    || !Files.isReadable(file)) {
+                throw new UpstreamProviderException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "Generated video frame is not available on the mounted output disk", MediaType.TEXT_PLAIN);
+            }
+            frameNames.add(filename);
         }
-        String resultId = filename.substring(0, filename.length() - 4);
+        Collections.sort(frameNames);
+        for (int index = 0; index < frameNames.size(); index++) {
+            String expectedName = String.format(Locale.ROOT, "frame_%05d_.png", index + 1);
+            if (!expectedName.equals(frameNames.get(index))) {
+                throw new UpstreamProviderException(HttpStatus.BAD_GATEWAY,
+                        "ComfyUI returned a non-contiguous video frame sequence", MediaType.TEXT_PLAIN);
+            }
+        }
+
         ObjectNode response = mapper.createObjectNode();
         response.put("created", Instant.now().getEpochSecond());
         response.put("model", request.getModel());
         response.put("duration", request.getDuration());
-        response.put("size", request.getSize() == null
-                ? ("HunyuanVideo-1.5".equals(request.getModel()) ? "1280x720" : "1280x704") : request.getSize());
+        response.put("size", request.getSize() == null ? "640x352" : request.getSize());
         response.put("result_id", resultId);
-        response.put("url", config.getPublicBaseUrl().replaceAll("/+$", "")
-                + "/v1/videos/results/" + resultId + "/content");
+        response.put("status", "frames_ready");
+        response.put("output_type", "image_sequence");
+        response.put("fps", 24);
+        response.put("frame_count", frameNames.size());
+        response.put("frame_pattern", "frame_%05d_.png");
+        response.put("frames_relative_path", subfolder);
+        response.put("frames_base_url", config.getPublicBaseUrl().replaceAll("/+$", "")
+                + "/v1/videos/results/" + resultId + "/frames");
+        response.set("frame_files", mapper.valueToTree(frameNames));
         return response;
     }
 }

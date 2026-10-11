@@ -242,7 +242,7 @@ mkdir -p \
   "/Volumes/LJW/tenx-ai/comfyui/archive"
 ```
 
-Gateway 生成的图片由 ComfyUI 保存在 `output/tenx`，网关从该目录提供长期下载地址。`archive` 是可选的人工归档目录，不是 ComfyUI 原生命令行参数。
+Gateway 生成的图片由 ComfyUI 保存在 `output/tenx`，视频帧保存在 `output/tenx-video-frames/<resultId>`。Windows 通过 Gateway 的鉴权 HTTP 接口下载帧并用 FFmpeg 合成最终 MP4，不需要开启 SMB。`archive` 是可选的人工归档目录，不是 ComfyUI 原生命令行参数。
 
 访问路径：
 
@@ -301,7 +301,8 @@ Image:
 tenx-ai-gateway -> ComfyUI:8188 -> /Volumes/LJW/tenx-ai/comfyui/output/tenx
 
 Video:
-tenx-ai-gateway -> ComfyUI:8188 -> /Volumes/LJW/tenx-ai/comfyui/output/tenx-video
+tenx-ai-gateway -> ComfyUI:8188 -> /Volumes/LJW/tenx-ai/comfyui/output/tenx-video-frames/<resultId>
+Windows tenx-ai-media-service -> Gateway authenticated frame downloads -> FFmpeg -> final MP4
 ```
 
 ## 停止服务

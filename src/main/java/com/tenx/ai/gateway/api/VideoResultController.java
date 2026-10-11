@@ -18,11 +18,13 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-/** Authenticated, streaming access to MP4 files saved by ComfyUI. */
+/** Legacy authenticated access to MP4 files created before frame-only mode was enabled. */
 @RestController
 public class VideoResultController {
 
-    private static final Pattern RESULT_ID = Pattern.compile("tenx_[0-9a-f]{32}_[0-9]{5}_");
+    private static final Pattern LEGACY_RESULT_ID = Pattern.compile("tenx_[0-9a-f]{32}_[0-9]{5}_");
+    private static final Pattern FRAME_RESULT_ID = Pattern.compile("tenx_[0-9a-f]{32}");
+    private static final Pattern FRAME_FILENAME = Pattern.compile("frame_[0-9]{5}_\\.png");
     private final GatewayProperties properties;
 
     public VideoResultController(GatewayProperties properties) {
@@ -31,7 +33,7 @@ public class VideoResultController {
 
     @GetMapping("/v1/videos/results/{resultId}/content")
     public Mono<ResponseEntity<Resource>> download(@PathVariable String resultId) {
-        if (!RESULT_ID.matcher(resultId).matches()) {
+        if (!LEGACY_RESULT_ID.matcher(resultId).matches()) {
             return Mono.just(ResponseEntity.badRequest().build());
         }
         return Mono.<ResponseEntity<Resource>>fromCallable(() -> {
@@ -47,6 +49,42 @@ public class VideoResultController {
                     .contentType(MediaType.parseMediaType("video/mp4"))
                     .contentLength(Files.size(file))
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resultId + ".mp4\"")
+                    .body((Resource) new FileSystemResource(file));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/v1/videos/results/{resultId}/frames/{filename}")
+    public Mono<ResponseEntity<Resource>> downloadFrame(@PathVariable String resultId,
+                                                        @PathVariable String filename) {
+        if (!FRAME_RESULT_ID.matcher(resultId).matches() || !FRAME_FILENAME.matcher(filename).matches()) {
+            return Mono.just(ResponseEntity.badRequest().build());
+        }
+        return Mono.<ResponseEntity<Resource>>fromCallable(() -> {
+            Path root = Paths.get(properties.getComfyui().getResultsDirectory()).toAbsolutePath().normalize();
+            if (!Files.isDirectory(root) || !Files.isReadable(root)) {
+                return ResponseEntity.<Resource>status(HttpStatus.SERVICE_UNAVAILABLE).build();
+            }
+            Path realRoot = root.toRealPath();
+            Path directory = root.resolve("tenx-video-frames").resolve(resultId).normalize();
+            if (!directory.startsWith(root)
+                    || !Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS)
+                    || !Files.isReadable(directory)) {
+                return ResponseEntity.<Resource>notFound().build();
+            }
+            Path realDirectory = directory.toRealPath();
+            if (!realDirectory.startsWith(realRoot)) {
+                return ResponseEntity.<Resource>notFound().build();
+            }
+            Path file = realDirectory.resolve(filename).normalize();
+            if (!file.startsWith(realDirectory)
+                    || !Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)
+                    || !Files.isReadable(file)) {
+                return ResponseEntity.<Resource>notFound().build();
+            }
+            return ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_PNG)
+                    .contentLength(Files.size(file))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
                     .body((Resource) new FileSystemResource(file));
         }).subscribeOn(Schedulers.boundedElastic());
     }

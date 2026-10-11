@@ -20,7 +20,7 @@ public class GatewayPropertiesBindingTest {
 
         Assertions.assertTrue(properties.getRoutes().containsKey("Wan2.2-TI2V-5B"));
         Assertions.assertEquals("video", properties.getRoutes().get("Wan2.2-TI2V-5B").getCapability());
-        Assertions.assertEquals(Integer.valueOf(5), properties.getRoutes().get("Wan2.2-TI2V-5B").getDefaultDurationSeconds());
+        Assertions.assertEquals(Integer.valueOf(1), properties.getRoutes().get("Wan2.2-TI2V-5B").getDefaultDurationSeconds());
     }
 
     @Test

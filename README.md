@@ -11,10 +11,10 @@ This version focuses on model onboarding, model download guides, deployment note
 Boundary rule:
 
 ```text
-tenx-ai-gateway routes model calls and serves saved ComfyUI image and video results.
+tenx-ai-gateway routes model calls and serves saved ComfyUI image results and video-frame manifests.
 It does not call tenx-ai-tts-adapter.
 It does not call study-ai-document-center-backend.
-It does not assemble final.mp4; ComfyUI stores generated videos on the external disk.
+It does not assemble final.mp4; ComfyUI stores PNG frames on the external disk and Windows encodes them with FFmpeg.
 ```
 
 Runtime ownership is split by model type:
@@ -22,7 +22,7 @@ Runtime ownership is split by model type:
 - Chat models run behind `llama.cpp` or another OpenAI-compatible text inference service.
 - Image models run in `ComfyUI:8188`; the Gateway submits fixed workflows directly.
 - Video models run in `ComfyUI:8188`; the Gateway submits fixed workflows directly.
-- ComfyUI saves Gateway generated images and videos to the external disk. The Gateway provides authenticated, permanent download URLs. Callers may copy results to their own storage.
+- ComfyUI saves Gateway generated images and PNG video frames to the external disk. The Gateway returns a frame manifest and authenticated frame URLs; the Windows media service downloads the frames over HTTP and encodes the final MP4.
 
 Recommended model placement:
 
@@ -55,7 +55,7 @@ flowchart TD
 
     T[llama.cpp:4000<br/>Chat models]
     C[ComfyUI:8188<br/>Image and video workflows]
-    S[tenx-ai-media-service storage<br/>Generated file storage]
+    S[Windows tenx-ai-media-service<br/>FFmpeg and final video storage]
 
     A1 --> G
     A2 --> G
@@ -74,7 +74,7 @@ Speech/TTS is intentionally outside this Gateway. `video-agent` calls `tenx-ai-t
 
 ## Calling Chains
 
-`tenx-ai-gateway` does not call business systems such as `study-ai-document-center-backend`. It serves generated images and videos from the configured ComfyUI output disk; audio storage remains outside this Gateway.
+`tenx-ai-gateway` does not call business systems such as `study-ai-document-center-backend`. It serves generated images and returns video-frame manifests from the configured ComfyUI output disk; audio and final-video storage remain outside this Gateway.
 
 Inbound callers:
 
@@ -92,7 +92,7 @@ Outbound dependencies:
 | Chat | `qwen3-coder-next` | `TENX_LOCAL_OPENAI_BASE_URL` such as `llama.cpp:4000` | None |
 | Cloud chat | `gpt-5` | `TENX_CLOUD_OPENAI_BASE_URL` | None |
 | Image | `qwen-image`, `flux-dev` | `TENX_COMFYUI_BASE_URL` such as `host.docker.internal:8188` | ComfyUI output on `/Volumes/LJW` |
-| Video | `Wan2.2-TI2V-5B`, `HunyuanVideo-1.5` | `TENX_COMFYUI_BASE_URL` such as `host.docker.internal:8188` | ComfyUI output on `/Volumes/LJW` |
+| Video frames | `Wan2.2-TI2V-5B`, `HunyuanVideo-1.5` | `TENX_COMFYUI_BASE_URL` such as `host.docker.internal:8188` | ComfyUI PNG frames on `/Volumes/LJW`; Windows owns final MP4 |
 
 End-to-end chains:
 
@@ -117,8 +117,9 @@ video-agent-webui
       -> tenx-ai-media-service /api/v1/videos/generations
           -> tenx-ai-gateway /v1/videos/generations
               -> ComfyUI:8188
-                  -> /Volumes/LJW/tenx-ai/comfyui/output/tenx-video
-          -> authenticated Gateway download URL
+                  -> /Volumes/LJW/tenx-ai/comfyui/output/tenx-video-frames/<resultId>
+          -> frame manifest
+          -> authenticated HTTP frame downloads + Windows FFmpeg -> final MP4
 ```
 
 ## What V1 Supports
@@ -127,7 +128,8 @@ video-agent-webui
 - `POST /v1/images/generations`
 - `GET /v1/images/results/{resultId}/content`
 - `POST /v1/videos/generations`
-- `GET /v1/videos/results/{resultId}/content`
+- `GET /v1/videos/results/{resultId}/frames/{filename}`
+- `GET /v1/videos/results/{resultId}/content` (legacy MP4 results only)
 - `GET /v1/models`
 - `GET /admin/models`
 - `POST /admin/models/{model}/start`
@@ -135,7 +137,7 @@ video-agent-webui
 - `GET /healthz`
 - OpenAI-compatible chat request forwarding
 - Direct ComfyUI image generation with permanent, authenticated result URLs
-- Direct ComfyUI video generation with permanent, authenticated MP4 download URLs
+- Direct ComfyUI frame generation with a deterministic manifest for Windows FFmpeg encoding
 - Direct model names in the request, such as `qwen3-coder-next` and `gpt-oss-120b`
 - Provider routing through configuration
 - One-level fallback for non-streaming and streaming calls
@@ -972,7 +974,7 @@ Video generation uses the Gateway endpoint and submits a fixed ComfyUI workflow:
 POST /v1/videos/generations
 ```
 
-Submit a 5-second video generation request:
+Submit a low-load one-second frame generation request:
 
 ```bash
 curl -s http://127.0.0.1:8088/v1/videos/generations \
@@ -980,32 +982,48 @@ curl -s http://127.0.0.1:8088/v1/videos/generations \
   -H 'Authorization: Bearer local-dev-key' \
   -d '{
     "model": "Wan2.2-TI2V-5B",
-    "prompt": "一个 5 秒的科技感视频",
-    "duration": 5,
-    "size": "1280x704"
+    "prompt": "一个科技感视频",
+    "duration": 1,
+    "size": "640x352"
   }'
 ```
 
-The Gateway waits for ComfyUI to save an MP4 and returns a result ID and download URL:
+The Gateway waits for ComfyUI to save all PNG frames and returns a Windows-consumable frame manifest:
 
 ```json
 {
   "model": "Wan2.2-TI2V-5B",
-  "duration": 5,
-  "size": "1280x704",
-  "result_id": "tenx_0123456789abcdef0123456789abcdef_00001_",
-  "url": "http://127.0.0.1:8088/v1/videos/results/tenx_0123456789abcdef0123456789abcdef_00001_/content"
+  "duration": 1,
+  "size": "640x352",
+  "result_id": "tenx_0123456789abcdef0123456789abcdef",
+  "status": "frames_ready",
+  "output_type": "image_sequence",
+  "fps": 24,
+  "frame_count": 25,
+  "frame_pattern": "frame_%05d_.png",
+  "frames_relative_path": "tenx-video-frames/tenx_0123456789abcdef0123456789abcdef",
+  "frames_base_url": "http://macstudio.tentest.cn:8088/v1/videos/results/tenx_0123456789abcdef0123456789abcdef/frames",
+  "frame_files": ["frame_00001_.png", "frame_00002_.png"]
 }
 ```
 
-Download with the same Bearer key:
+Windows downloads each name in `frame_files` from `frames_base_url` with the same Gateway bearer token, then encodes the local sequence with FFmpeg. The frame endpoint streams files from the read-only ComfyUI output mount, so SMB is not required:
 
 ```bash
-curl -fL 'http://127.0.0.1:8088/v1/videos/results/tenx_0123456789abcdef0123456789abcdef_00001_/content' \
-  -H 'Authorization: Bearer local-dev-key' -o result.mp4
+curl -o frame_00001_.png \
+  -H 'Authorization: Bearer local-dev-key' \
+  'http://macstudio.tentest.cn:8088/v1/videos/results/tenx_0123456789abcdef0123456789abcdef/frames/frame_00001_.png'
 ```
 
-Results are saved under `/Volumes/LJW/tenx-ai/comfyui/output/tenx-video` and are not deleted automatically. HunyuanVideo 1.5 defaults to `1280x720`; Wan 2.2 5B defaults to `1280x704`. Both default to 5 seconds and support 1–5 seconds, optional `seed`, `steps`, and `negative_prompt`. Video generation can take a long time and this endpoint waits synchronously for completion. Use `tenx-ai-media-service` if the WebUI needs asynchronous jobs or its own media copies.
+Encode the downloaded sequence on Windows:
+
+```powershell
+ffmpeg -framerate 24 -start_number 1 `
+  -i "frame_%05d_.png" `
+  -c:v libx264 -crf 18 -pix_fmt yuv420p output.mp4
+```
+
+Frames are saved under `/Volumes/LJW/tenx-ai/comfyui/output/tenx-video-frames/<resultId>` and are not deleted automatically. Both local video routes default to `640x352`, one second, 14 sampling steps, Euler sampling, and 24 fps. Requests may explicitly select 1–5 seconds, a valid model size, optional `seed`, `steps` (1–30), and `negative_prompt`. The endpoint waits synchronously until all frames exist. `tenx-ai-media-service` on Windows should download the authenticated frames, perform FFmpeg encoding, and own the final MP4 URL. The legacy `/v1/videos/results/{resultId}/content` endpoint remains only for MP4 files generated before frame mode was enabled.
 
 ## Use With Open WebUI Docker
 
